@@ -1,0 +1,122 @@
+{
+  "crops": {
+    "Melon": {
+      "idealParameters": {
+        "temperature": { "min": 24, "max": 30, "optimal": 27 },
+        "humidity": { "min": 60, "max": 75, "optimal": 65 },
+        "lightIntensity": { "min": 30000, "max": 50000, "optimal": 40000 },
+        "pH": { "min": 6.0, "max": 6.5, "optimal": 6.2 },
+        "PPM": {
+          "vegetative": { "min": 800, "max": 1000 },
+          "generative": { "min": 1200, "max": 1500 }
+        }
+      },
+      "gddBaseTemp": 10,
+      "gddTargetVegetative": 400,
+      "gddTargetHarvest": 1100
+    },
+    "Strawberry": {
+      "idealParameters": {
+        "temperature": { "min": 15, "max": 25, "optimal": 20 },
+        "humidity": { "min": 65, "max": 75, "optimal": 70 },
+        "lightIntensity": { "min": 25000, "max": 40000, "optimal": 30000 },
+        "pH": { "min": 5.5, "max": 6.5, "optimal": 6.0 },
+        "PPM": {
+          "vegetative": { "min": 600, "max": 800 },
+          "generative": { "min": 900, "max": 1200 }
+        }
+      },
+      "gddBaseTemp": 5,
+      "gddTargetVegetative": 300,
+      "gddTargetHarvest": 800
+    },
+    "Grape": {
+      "idealParameters": {
+        "temperature": { "min": 15, "max": 30, "optimal": 25 },
+        "humidity": { "min": 50, "max": 70, "optimal": 60 },
+        "lightIntensity": { "min": 40000, "max": 60000, "optimal": 50000 },
+        "pH": { "min": 5.5, "max": 6.5, "optimal": 6.0 },
+        "PPM": {
+          "vegetative": { "min": 1000, "max": 1200 },
+          "generative": { "min": 1400, "max": 1800 }
+        }
+      },
+      "gddBaseTemp": 10,
+      "gddTargetVegetative": 600,
+      "gddTargetHarvest": 1500
+    }
+  },
+  "troubleshooter": {
+    "start": {
+      "question": "What part of the plant is showing symptoms?",
+      "options": [
+        { "label": "Leaves", "next": "leaves" },
+        { "label": "Fruits", "next": "fruits" }
+      ]
+    },
+    "leaves": {
+      "question": "What kind of symptoms are on the leaves?",
+      "options": [
+        { "label": "Yellowing (Chlorosis)", "next": "leaves_yellowing" },
+        { "label": "Spots or Powdery Coating", "next": "leaves_spots" }
+      ]
+    },
+    "fruits": {
+      "question": "What kind of symptoms are on the fruits?",
+      "options": [
+        { "label": "Rotting from the bottom", "next": "fruits_blossom_rot" },
+        { "label": "Cracking or splitting", "next": "fruits_cracking" }
+      ]
+    },
+    "leaves_yellowing": {
+      "question": "Is the yellowing starting from the older (lower) leaves?",
+      "options": [
+        { "label": "Yes", "next": "solution_nitrogen_deficiency" },
+        { "label": "No, it's on new leaves or between veins", "next": "solution_magnesium_iron_deficiency" }
+      ]
+    },
+    "leaves_spots": {
+      "question": "Is there a white powdery substance?",
+      "options": [
+        { "label": "Yes", "next": "solution_powdery_mildew" },
+        { "label": "No, just brown/black spots", "next": "solution_fungal_leaf_spot" }
+      ]
+    },
+    "solution_nitrogen_deficiency": {
+      "type": "solution",
+      "diagnosis": "Nitrogen Deficiency",
+      "organic": "Apply compost tea or fish emulsion.",
+      "chemical": "Increase N-P-K fertilizer ratio with higher Nitrogen, or add Urea."
+    },
+    "solution_magnesium_iron_deficiency": {
+      "type": "solution",
+      "diagnosis": "Magnesium or Iron Deficiency",
+      "organic": "Apply Epsom salts (for Mg) dissolved in water as a foliar spray.",
+      "chemical": "Use a micronutrient fertilizer containing chelated iron and magnesium."
+    },
+    "solution_powdery_mildew": {
+      "type": "solution",
+      "diagnosis": "Powdery Mildew (Fungal Disease)",
+      "organic": "Spray neem oil or a milk-water mixture (1:10 ratio). Ensure good air circulation.",
+      "chemical": "Apply a sulfur-based or potassium bicarbonate fungicide."
+    },
+    "solution_fungal_leaf_spot": {
+      "type": "solution",
+      "diagnosis": "Fungal Leaf Spot",
+      "organic": "Remove affected leaves. Spray with a baking soda and water solution.",
+      "chemical": "Apply a copper-based fungicide. Avoid overhead watering."
+    },
+    "fruits_blossom_rot": {
+      "type": "solution",
+      "diagnosis": "Blossom End Rot (Calcium Deficiency / Moisture fluctuation)",
+      "organic": "Add crushed eggshells to soil (long-term). Maintain consistent watering.",
+      "chemical": "Apply calcium nitrate as a foliar spray or through fertigation."
+    },
+    "fruits_cracking": {
+      "type": "solution",
+      "diagnosis": "Fruit Cracking (Irregular watering during rapid growth)",
+      "organic": "Improve soil drainage and implement a strict, consistent watering schedule.",
+      "chemical": "Ensure balanced potassium and calcium levels to strengthen cell walls."
+    }
+  }
+}
