@@ -50,32 +50,32 @@
     "start": {
       "question": "What part of the plant is showing symptoms?",
       "options": [
-        { "label": "Leaves", "next": "leaves" },
-        { "label": "Fruits", "next": "fruits" }
+        { "label": "Daun", "next": "Daun" },
+        { "label": "Buah", "next": "Buah" }
       ]
     },
-    "leaves": {
-      "question": "What kind of symptoms are on the leaves?",
+    "Daun": {
+      "question": "Bagian tanaman apa yang bermasalah?",
       "options": [
-        { "label": "Yellowing (Chlorosis)", "next": "leaves_yellowing" },
-        { "label": "Spots or Powdery Coating", "next": "leaves_spots" }
+        { "label": "Menguning (Chlorosis)", "next": "Daun_yellowing" },
+        { "label": "Spots or Powdery Coating", "next": "Daun_spots" }
       ]
     },
-    "fruits": {
-      "question": "What kind of symptoms are on the fruits?",
+    "Buah": {
+      "question": "What kind of symptoms are on the Buah?",
       "options": [
-        { "label": "Rotting from the bottom", "next": "fruits_blossom_rot" },
-        { "label": "Cracking or splitting", "next": "fruits_cracking" }
+        { "label": "Rotting from the bottom", "next": "Buah_blossom_rot" },
+        { "label": "Cracking or splitting", "next": "Buah_cracking" }
       ]
     },
-    "leaves_yellowing": {
-      "question": "Is the yellowing starting from the older (lower) leaves?",
+    "Daun_yellowing": {
+      "question": "Apakah menguning dimulai dari Daun yang lebih tua (di bawah)?",
       "options": [
         { "label": "Yes", "next": "solution_nitrogen_deficiency" },
-        { "label": "No, it's on new leaves or between veins", "next": "solution_magnesium_iron_deficiency" }
+        { "label": "No, it's on new Daun or between veins", "next": "solution_magnesium_iron_deficiency" }
       ]
     },
-    "leaves_spots": {
+    "Daun_spots": {
       "question": "Is there a white powdery substance?",
       "options": [
         { "label": "Yes", "next": "solution_powdery_mildew" },
@@ -103,16 +103,16 @@
     "solution_fungal_leaf_spot": {
       "type": "solution",
       "diagnosis": "Fungal Leaf Spot",
-      "organic": "Remove affected leaves. Spray with a baking soda and water solution.",
+      "organic": "Remove affected Daun. Spray with a baking soda and water solution.",
       "chemical": "Apply a copper-based fungicide. Avoid overhead watering."
     },
-    "fruits_blossom_rot": {
+    "Buah_blossom_rot": {
       "type": "solution",
       "diagnosis": "Blossom End Rot (Calcium Deficiency / Moisture fluctuation)",
       "organic": "Add crushed eggshells to soil (long-term). Maintain consistent watering.",
       "chemical": "Apply calcium nitrate as a foliar spray or through fertigation."
     },
-    "fruits_cracking": {
+    "Buah_cracking": {
       "type": "solution",
       "diagnosis": "Fruit Cracking (Irregular watering during rapid growth)",
       "organic": "Improve soil drainage and implement a strict, consistent watering schedule.",

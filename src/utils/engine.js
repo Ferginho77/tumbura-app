@@ -1,4 +1,4 @@
-import knowledgeBase from '../data/knowledgeBase.json';
+import { KnowledgeBuah } from '../data/KnowledgeBuah';
 
 /**
  * Calculates environmental health score and gives recommendations based on real-time inputs.
@@ -8,8 +8,8 @@ import knowledgeBase from '../data/knowledgeBase.json';
  * @returns {object} { score, recommendations }
  */
 export function evaluateEnvironment(crop, current, phase = 'vegetative') {
-  const params = knowledgeBase.crops[crop]?.idealParameters;
-  if (!params) return { score: 0, recommendations: ["Crop not found in knowledge base."] };
+  const params = KnowledgeBuah[crop]?.idealParameters;
+  if (!params) return { score: 0, recommendations: ["Silahkan pilih tanaman terlebih dahulu."] };
 
   let score = 100;
   let recommendations = [];
@@ -50,6 +50,17 @@ export function evaluateEnvironment(crop, current, phase = 'vegetative') {
     recommendations.push("pH terlalu basa. Tambahkan pH Down.");
   }
 
+  //EC
+  const ECTarget = params.EC[phase];
+  if (current.EC < ECTarget.min) {
+    score -= 15;
+    recommendations.push(`EC kurang untuk fase ${phase}. Tambahkan nutrisi (AB Mix).`);
+  } else if (current.EC > ECTarget.max) {
+    score -= 15;
+    recommendations.push(`EC berlebih untuk fase ${phase}. Tambahkan air baku.`);
+  }
+
+
   // PPM
   const ppmTarget = params.PPM[phase];
   if (current.PPM < ppmTarget.min) {
@@ -74,7 +85,7 @@ export function evaluateEnvironment(crop, current, phase = 'vegetative') {
  * @returns {object} { gdd, phase, estimatedHarvestDate }
  */
 export function calculateGrowth(crop, plantingDate, avgDailyTemp) {
-  const cropData = knowledgeBase.crops[crop];
+  const cropData = KnowledgeBuah[crop];
   if (!cropData || !plantingDate) return null;
 
   const baseTemp = cropData.gddBaseTemp;

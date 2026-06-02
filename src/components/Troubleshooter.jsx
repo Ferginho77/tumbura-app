@@ -57,14 +57,14 @@ export default function Troubleshooter() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-card p-4 rounded-lg border" style={{ borderColor: 'var(--color-primary-200)' }}>
-                  <h4 className="font-semibold flex items-center gap-2 mb-2" style={{ color: 'var(--color-primary-600)' }}>
+                <div className="bg-card p-4 rounded-lg border border-primary-200">
+                  <h4 className="font-semibold flex items-center gap-2 mb-2 text-primary-600">
                     <Leaf size={18} /> Organic Solution
                   </h4>
                   <p className="text-sm">{currentNode.organic}</p>
                 </div>
-                <div className="bg-card p-4 rounded-lg border" style={{ borderColor: '#bfdbfe' }}>
-                  <h4 className="font-semibold flex items-center gap-2 mb-2" style={{ color: '#3b82f6' }}>
+                <div className="bg-card p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold flex items-center gap-2 mb-2 text-blue-500">
                     <FlaskConical size={18} /> Chemical Solution
                   </h4>
                   <p className="text-sm">{currentNode.chemical}</p>

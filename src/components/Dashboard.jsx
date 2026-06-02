@@ -9,6 +9,8 @@ import { evaluateEnvironment } from '../utils/engine';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMapPin, faSun, faSeedling, faTree, faTemperature0, faCloud, faCloudRain, faCloudSunRain, faMoon, faSmog} from "@fortawesome/free-solid-svg-icons";
 import './Dashboard.css';
+import { GetTanamans } from '../api/TanamanService';
+import { KnowledgeBuah } from '../data/KnowledgeBuah';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -17,13 +19,47 @@ export default function Dashboard() {
   const [phase, setPhase] = useLocalStorage('greenvibe_phase', 'vegetative');
   const [weather, setWeatherData] = useState(false); 
   const SearchRef = useRef();
+  const [tanamans, setTanamans] = useState([]);
+
+  useEffect(() => {
+    const fetchTanamans = async () => {
+      try {
+        const response = await GetTanamans();
+        // Asumsi API mengembalikan array: [{ id: 1, nama: 'Melon' }, ...]
+        setTanamans(response.data || response); 
+        
+        // Set default value jika data tersedia
+        if (response.length > 0) {
+          setCrop(response[0].nama || response[0].name);
+        }
+        
+      } catch (error) {
+        console.error("Gagal mengambil data tanaman:", error);
+      }
+    }
+    fetchTanamans();
+  }, []);
+
+  const [selectedCrop, setSelectedCrop] = useState('');
+  const [knowledge, setKnowledge] = useState(null);
+
+// Setiap kali tanaman dipilih di dropdown
+useEffect(() => {
+  if (selectedCrop && KnowledgeBuah[selectedCrop]) {
+    // Ambil detail parameter berdasarkan nama tanaman yang dipilih
+    setKnowledge(KnowledgeBuah[selectedCrop]);
+  } else {
+    setKnowledge(null);
+  }
+}, [selectedCrop]);
 
   const [params, setParams] = useState({
     temperature: 25,
     humidity: 65,
     lightIntensity: 35000,
     pH: 6.0,
-    PPM: 900
+    PPM: 900,
+    EC: 1.5
   });
 
     const capitalize = (text) =>
@@ -80,31 +116,6 @@ export default function Dashboard() {
     setParams(prev => ({ ...prev, [key]: Number(value) }));
   };
 
-  const chartData = {
-    labels: history.labels,
-    datasets: [
-      {
-        label: 'Environmental Score',
-        data: history.scores,
-        borderColor: '#059669',
-        backgroundColor: 'rgba(5, 150, 105, 0.2)',
-        tension: 0.4,
-        fill: true,
-      }
-    ]
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: { min: 0, max: 100 }
-    },
-    plugins: {
-      legend: { display: false }
-    }
-  };
-
   const search = async (city) =>{
   try {
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${import.meta.env.VITE_APP_ID}&lang=id`
@@ -156,17 +167,23 @@ export default function Dashboard() {
       <div className="dashboard-header flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold">Welcome To TumburaApp</h2>
-          <p className="text-muted">Real-time optimization engine</p>
         </div>
         <div className="controls flex gap-2">
-          <button className="btn-primary flex items-center justify-center" style={{padding: '0.5rem'}} onClick={handleDownloadPNG} title="Save as PNG">
+          <button className="btn-primary flex items-center justify-center p-2" onClick={handleDownloadPNG} title="Save as PNG">
             <Download size={20} />
           </button>
-          <select className="input-field" value={crop} onChange={(e) => setCrop(e.target.value)}>
-            <option value="Melon">Melon</option>
-            <option value="Strawberry">Strawberry</option>
-            <option value="Grape">Grape</option>
-          </select>
+        <select 
+        className="input-field" 
+        value={crop} 
+        onChange={(e) => setCrop(e.target.value)}
+      >
+        <option>-- Pilih Tanaman --</option>
+        {tanamans.map((item, index) => (
+          <option key={item.TanamanId || index} value={item.NamaTanaman || item.NamaTanaman}>
+            {item.NamaTanaman || item.NamaTanaman}
+          </option>
+        ))}
+      </select>
           <select className="input-field" value={phase} onChange={(e) => setPhase(e.target.value)}>
             <option value="vegetative">Vegetative</option>
             <option value="generative">Generative</option>
@@ -174,7 +191,7 @@ export default function Dashboard() {
         </div>
       </div>
             <input placeholder="Cari Lokasi..." className="input-field" ref={SearchRef} /> <button onClick={() => search(SearchRef.current.value)} className="btn-primary text-white rounded-lg shadow hover:bg-green-600 transition text-sm sm:text-base">Cari</button>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6" ref={dashboardRef} style={{ padding: '1rem', borderRadius: '0.75rem', backgroundColor: 'var(--color-bg-50)' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 p-4 rounded-xl bg-bg-50" ref={dashboardRef}>
         {/* Left Columns: Sliders */}
         <div className="card flex flex-col gap-6 md:col-span-2 lg:col-span-2">
           <h3 className="text-lg font-semibold mb-4">Environment Controls</h3>
@@ -238,6 +255,17 @@ export default function Dashboard() {
                 onChange={(e) => handleParamChange('PPM', e.target.value)} 
               />
             </div>
+            <div className="control-group">
+              <div className="flex justify-between items-center mb-2">
+                <label>EC Level</label>
+                <span className="font-bold">{params.EC}</span>
+              </div>
+              <input 
+                type="range" max="3.0" min="0.5" step="0.1"
+                value={params.EC} 
+                onChange={(e) => handleParamChange('EC', e.target.value)} 
+              />
+            </div>
           </div>
         </div>
 
@@ -297,14 +325,7 @@ export default function Dashboard() {
           />
         </div>
       </div>
-
-      {/* Chart Section */}
-      <div className="card mt-6" style={{marginTop: '2rem'}}>
-        <h3 className="text-lg font-semibold mb-4">Score History</h3>
-        <div className="chart-container" style={{ height: '250px' }}>
-          <Line data={chartData} options={chartOptions} />
-        </div>
-      </div>
+      
     </div>
   );
 }

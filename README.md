@@ -1,16 +1,11 @@
-# React + Vite
+<h1>Syarat Instalasi</h1>
+1. Laptop terinstall node js versi 21++
+2. Laptop terinstall package golang
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+<h1>Tahapan Memulai</h1>
+1. instalasi package dari Golang(Backend) dan ReactJS(FrontEnd)
+2. install "npm install" pada reactjs
+    Install "go mod tidy" -> "gobuild" -> "go install" pada Golang
+3. pastikan di backend dan front end sudah selesai terinstall baru bisa memulai ngoding
+4. running project jalankan "npm run dev" pada front end dan "go run main.go" pada backend
+5. ucap bismillah setiap memulai pekerjaan, libatkan Allah dalam setiap pekerjaan agar dimudahkan

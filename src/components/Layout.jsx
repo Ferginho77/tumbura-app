@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, Activity, Bug, Calendar, Menu, X, Sun, Moon } from 'lucide-react';
+import { Sprout, Activity, Bug, Calendar, Menu, X, Sun, Moon, Package } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import './Layout.css';
 
 const navItems = [
   { path: '/', name: 'Dashboard', icon: Activity },
-  { path: '/calculator', name: 'GDD Calculator', icon: Sprout },
-  { path: '/troubleshooter', name: 'Troubleshooter', icon: Bug },
   { path: '/scheduler', name: 'Task Scheduler', icon: Calendar },
+  { path: '/inventory', name: 'Inventory', icon: Package },
+  { path: '/fields', name: 'Field Control', icon: Sprout }
 ];
 
 export default function Layout() {
@@ -85,7 +85,7 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div style={{ padding: '1rem', marginTop: 'auto', borderTop: '1px solid var(--color-bg-200)' }}>
+        <div className="p-4 mt-auto border-t border-bg-200">
           <button className="btn-outline flex items-center justify-center gap-2 w-full" onClick={toggleTheme}>
             {theme === 'light' ? <><Moon size={18} /> Dark Mode</> : <><Sun size={18} /> Light Mode</>}
           </button>

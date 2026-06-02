@@ -3,15 +3,32 @@ import { motion } from 'framer-motion';
 import { Calculator as CalcIcon, Calendar, ThermometerSun, Leaf, Grape } from 'lucide-react';
 import { calculateGrowth } from '../utils/engine';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { GetTanamans } from '../api/TanamanService';
 
 export default function Calculator() {
   const [crop, setCrop] = useLocalStorage('greenvibe_gdd_crop', 'Melon');
   const [plantingDate, setPlantingDate] = useLocalStorage('greenvibe_gdd_date', new Date().toISOString().split('T')[0]);
   const [avgTemp, setAvgTemp] = useLocalStorage('greenvibe_gdd_temp', 27);
-  
+  const [tanamans, setTanamans] = useState([]);
   const [result, setResult] = useState(null);
 
   useEffect(() => {
+     const fetchTanamans = async () => {
+      try {
+        const response = await GetTanamans();
+        // Asumsi API mengembalikan array: [{ id: 1, nama: 'Melon' }, ...]
+        setTanamans(response.data || response); 
+        
+        // Set default value jika data tersedia
+        if (response.length > 0) {
+          setCrop(response[0].nama || response[0].name);
+        }
+        
+      } catch (error) {
+        console.error("Gagal mengambil data tanaman:", error);
+      }
+    }
+    fetchTanamans();
     if (plantingDate) {
       const res = calculateGrowth(crop, plantingDate, avgTemp);
       setResult(res);
@@ -29,11 +46,17 @@ export default function Calculator() {
         <div className="card flex-col gap-4">
           <div className="control-group">
             <label className="block mb-2 font-semibold">Select Crop</label>
-            <select className="input-field" value={crop} onChange={(e) => setCrop(e.target.value)}>
-              <option value="Melon">Melon</option>
-              <option value="Strawberry">Strawberry</option>
-              <option value="Grape">Grape</option>
-            </select>
+            <select 
+        className="input-field" 
+        value={crop} 
+        onChange={(e) => setCrop(e.target.value)}
+      >
+        {tanamans.map((item, index) => (
+          <option key={item.TanamanId || index} value={item.NamaTanaman || item.NamaTanaman}>
+            {item.NamaTanaman || item.NamaTanaman}
+          </option>
+        ))}
+      </select>
           </div>
 
           <div className="control-group mt-4">
