@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, Activity, Bug, Calendar, Menu, X, Sun, Moon, Package } from 'lucide-react';
+import { Sprout, Activity, Bug, Calendar, Menu, X, Sun, Moon, Package, LogOut } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import './Layout.css';
 
@@ -13,6 +13,7 @@ const navItems = [
 ];
 
 export default function Layout() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useLocalStorage('greenvibe_theme', 'light');
 
@@ -25,6 +26,11 @@ export default function Layout() {
   }, [theme]);
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
+
+  const handleLogout = () => {
+    localStorage.removeItem('greenvibe_user');
+    navigate('/login', { replace: true });
+  };
 
   return (
     <div className="layout-container">
@@ -47,7 +53,7 @@ export default function Layout() {
               transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
             >
               <div className="sidebar-header">
-                <h1 className="logo"><Sprout className="logo-icon" /> TumburaApp</h1>
+                <h1 className="logo"> <img src="/icon.png" alt="TumburaApp Logo" className="w-8 h-8 mr-2" /> TumburaApp</h1>
                 <button className="icon-btn" onClick={() => setSidebarOpen(false)}><X /></button>
               </div>
               <nav className="sidebar-nav">
@@ -63,6 +69,11 @@ export default function Layout() {
                   </NavLink>
                 ))}
               </nav>
+              <div className="p-4 mt-auto border-t border-bg-200">
+                <button className="btn-outline flex items-center justify-center gap-2 w-full text-[red] border-[red] hover:bg-red-50 dark:hover:bg-red-950/20" onClick={handleLogout}>
+                  <LogOut size={18} /> Keluar
+                </button>
+              </div>
             </motion.div>
           </>
         )}
@@ -71,7 +82,7 @@ export default function Layout() {
       {/* Desktop Sidebar */}
       <div className="sidebar desktop">
         <div className="sidebar-header">
-          <h1 className="logo"><Sprout className="logo-icon" /> TumburaApp</h1>
+          <h1 className="logo"> <img src="/icon.png" alt="TumburaApp Logo" className="w-8 h-8 mr-2" /> TumburaApp</h1>
         </div>
         <nav className="sidebar-nav">
           {navItems.map((item) => (
@@ -85,9 +96,12 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 mt-auto border-t border-bg-200">
+        <div className="p-4 mt-auto border-t border-bg-200 flex flex-col gap-2">
           <button className="btn-outline flex items-center justify-center gap-2 w-full" onClick={toggleTheme}>
             {theme === 'light' ? <><Moon size={18} /> Dark Mode</> : <><Sun size={18} /> Light Mode</>}
+          </button>
+          <button className="btn-outline flex items-center justify-center gap-2 w-full text-[red] border-[red] hover:bg-red-50 dark:hover:bg-red-950/20" onClick={handleLogout}>
+            <LogOut size={18} /> Keluar
           </button>
         </div>
       </div>

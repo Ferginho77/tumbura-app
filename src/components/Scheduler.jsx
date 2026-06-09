@@ -8,24 +8,33 @@ import {
   Circle,
   Pencil,
 } from "lucide-react";
-import { getSchedulers, UpdateStatus, DeleteScheduler } from "../api/SchedulerService";
+import { getSchedulers, UpdateStatus, DeleteScheduler, CreateScheduler } from "../api/SchedulerService";
 
 
 export default function Scheduler() {
   const [schedulers, setSchedulers] = useState([]);
 
-  useEffect(() => {
-    async function fetchSchedulers() {
-      try {
-        const data = await getSchedulers();
-        console.log("Schedulers:", data);
-        setSchedulers(data);
-      } catch (error) {
-        console.error("Error fetching schedulers:", error);
-      }
-    }
-    fetchSchedulers();
-  }, []);
+   const [formData, setFormData] = useState({
+    NamaScheduler: '',
+    Tanggal: '',
+    Status: 'Pending'
+  });
+
+  const fetchSchedulers = async () => {
+  try {
+    const data = await getSchedulers();
+    console.log("Schedulers:", data);
+    setSchedulers(data);
+  } catch (error) {
+    console.error("Error fetching schedulers:", error);
+  }
+};
+
+// 2. Jalankan fetchSchedulers saat pertama kali komponen di-mount
+useEffect(() => {
+  fetchSchedulers();
+}, []);
+  
 
   const handleDeleteScheduler = async (SchedulerId) => {
     try {
@@ -42,7 +51,30 @@ export default function Scheduler() {
       console.error("Error deleting scheduler:", error);
     
     }
+
   };
+
+  const handleCreateScheduler = async (e) => {
+  e.preventDefault();
+  try {
+    const payload = {
+      ...formData
+    };
+    const result = await CreateScheduler(payload);
+    if (result) {
+      setFormData({
+        NamaScheduler: '',
+        Tanggal: '',
+        Status: 'Pending'
+      });
+      
+      // ✅ Sekarang ini tidak akan error lagi dan auto-refresh akan bekerja!
+      fetchSchedulers(); 
+    }
+  } catch (error) {
+    console.error("Error creating schedulers :", error);
+  }
+};
 
   return (
     <div className="scheduler animate-fade-in">
@@ -60,13 +92,25 @@ export default function Scheduler() {
       {/* Card */}
       <div className="card max-w-4xl p-6 rounded-2xl shadow-lg">
         {/* Form */}
-        <form className="flex gap-2 mb-6">
+        <form className="flex gap-2 mb-6" onSubmit={handleCreateScheduler}>
           <input
             type="text"
             className="input-field flex-1"
             placeholder="Add new maintenance task..."
+            value={formData.NamaScheduler}
+            onChange={(e) => setFormData({ ...formData, NamaScheduler: e.target.value })}
           />
-
+          <input
+            type="date"
+            className="input-field"
+            value={formData.Tanggal}
+          onChange={(e) => setFormData({ ...formData, Tanggal: e.target.value })}
+          />
+          <input
+            type="hidden"
+            value={formData.Status}
+          onChange={(e) => setFormData({ ...formData, Status: e.target.value })}
+          />
           <button
             type="submit"
             className="btn-primary flex items-center gap-2 shrink-0"
@@ -141,6 +185,11 @@ export default function Scheduler() {
                         {/* Delete */}
                         <button
                           className="text-red-500 hover:scale-110 transition"
+                          onClick={() => {
+                            if (confirm("Apakah Anda Yakin Menghapus Task Ini?")) {
+                              handleDeleteScheduler(scheduler.SchedulerId);
+                            }
+                          }}
                         >
                           <Trash2 size={18} />
                         </button>

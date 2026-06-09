@@ -1,4 +1,6 @@
+// const API_Inventaris = 'https://tumbura-be-691717727272.asia-southeast2.run.app/inventaris';
 const API_Inventaris = 'http://localhost:8080/inventaris';
+
 
 export const getInventaris = async () => {
     const respose = await fetch(API_Inventaris);
@@ -12,3 +14,18 @@ export const DeleteInventaris = async (InventarisId) => {
     });
     return response.ok;
 }
+
+export const CreateInventaris = async (inventaris) => {
+    const response = await fetch(API_Inventaris, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inventaris),
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Gagal membuat data inventaris");
+    }
+    return response.json();
+}   

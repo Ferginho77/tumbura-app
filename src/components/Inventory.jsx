@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { getInventaris, DeleteInventaris } from "../api/InventarisService";
+import { getInventaris, DeleteInventaris, CreateInventaris } from "../api/InventarisService";
 import {
   Trash2,
   Pencil,
@@ -10,20 +10,49 @@ export default function Inventory() {
   const [inventaris, setInventaris] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
 
+  const [formData, setFormData] = useState({
+    NamaBarang: '',
+    Jenis: 'Benih',
+    Stok: ''
+  });
+
+  const fetchInventaris = async () => {
+    try {
+      const data = await getInventaris();
+      console.log("Inventaris:", data);
+      setInventaris(data);
+    } catch (error) {
+      console.error("Error fetching inventaris:", error);
+    }
+  };
+
+  const handleCreateInventaris = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...formData,
+        Stok: parseInt(formData.Stok, 10) || 0
+      };
+      const result = await CreateInventaris(payload);
+      if (result) {
+        setModalVisible(false);
+        setFormData({
+          NamaBarang: '',
+          Jenis: 'Benih',
+          Stok: ''
+        });
+        fetchInventaris();
+      }
+    } catch (error) {
+      console.error("Error creating inventaris:", error);
+    }
+  };
+
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
   };
 
   useEffect(() => {
-    async function fetchInventaris(){
-      try {
-        const data = await getInventaris();
-        console.log("Inventaris:", data);
-        setInventaris(data);
-      } catch (error) {
-        console.error("Error fetching inventaris:", error);
-      }
-    }
     fetchInventaris();
   }, []);
 
@@ -52,7 +81,7 @@ export default function Inventory() {
             <Inbox size={24} className="text-primary" />
             <div>
               <h3 className="text-lg font-semibold">Total Items</h3>
-              <p className="text-2xl font-bold">80</p>
+              <p className="text-2xl font-bold">{inventaris.length}</p>
             </div>
           </div>       
                   
@@ -102,18 +131,23 @@ export default function Inventory() {
             <div className="modal-content">
               <div className="card max-w-2xl p-6 mt-4">
                    <h3>Tambah Barang</h3>
-              <form className="flex flex-col gap-4 mt-4">
+              <form className="flex flex-col gap-4 mt-4" onSubmit={handleCreateInventaris}>
                 <div className="form-group">
                   <label htmlFor="namaBarang">Nama Barang</label>
-                  <input type="text" id="namaBarang" className="input-field m-2" />
+                  <input type="text" id="namaBarang" name="NamaBarang" className="input-field m-2" value={formData.NamaBarang} onChange={(e) => setFormData({...formData, NamaBarang: e.target.value})}/>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="jenisBarang">Jenis Barang</label>
-                  <input type="text" id="jenisBarang" className="input-field m-2" />
+                  <label htmlFor="Jenis">Jenis Barang</label>
+                  <select name="Jenis" id="Jenis" className="input-field m-2" value={formData.Jenis} onChange={(e) => setFormData({...formData, Jenis: e.target.value})}>
+                    <option value="Benih">Benih</option>
+                    <option value="Pupuk">Pupuk</option>
+                    <option value="Obat">Obat</option>
+                    <option value="Alat-alat">Alat-alat</option>
+                  </select>
                 </div>
                 <div className="form-group">
                   <label htmlFor="stok">Stok</label>
-                  <input type="number" id="stok" className="input-field m-2" />
+                  <input type="number" name="Stok" className="input-field m-2" value={formData.Stok} onChange={(e) => setFormData({...formData, Stok: e.target.value})}/>
                 </div>
                 <button
                   type="submit"
