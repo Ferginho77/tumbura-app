@@ -1,5 +1,5 @@
-// const API_Inventaris = 'https://tumbura-be-691717727272.asia-southeast2.run.app/inventaris';
-const API_Inventaris = 'http://localhost:8080/inventaris';
+const API_Inventaris = 'https://tumbura-be-691717727272.asia-southeast2.run.app/inventaris';
+// const API_Inventaris = 'http://localhost:8080/inventaris';
 
 
 export const getInventaris = async () => {

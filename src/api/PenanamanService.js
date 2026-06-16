@@ -1,8 +1,13 @@
 import axios from "axios";
 
-const API_PENANAMAN = 'http://localhost:8080/penanamans';
-const API_LAHAN = 'http://localhost:8080/lahans';
-const API_TANAMAN = 'http://localhost:8080/tanamans';
+// const API_PENANAMAN = 'http://localhost:8080/penanamans';
+// const API_LAHAN = 'http://localhost:8080/lahans';
+// const API_TANAMAN = 'http://localhost:8080/tanamans';
+
+const API_PENANAMAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/penanamans';
+const API_LAHAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/lahans';
+const API_TANAMAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/tanamans';
+
 
 export const getPenanaman = async () => {
    try{
