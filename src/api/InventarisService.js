@@ -29,3 +29,27 @@ export const CreateInventaris = async (inventaris) => {
     }
     return response.json();
 }   
+
+export const UpdateInventaris = async (
+  InventarisId,
+  inventarisData
+) => {
+
+    const payload = {
+      ...inventarisData,
+      Stok: parseInt(inventarisData.Stok, 10)
+    };
+    console.log("DATA KE BACKEND:", payload);
+   const res = await fetch(`${API_Inventaris}/${InventarisId}/update`, {
+    method: 'PUT',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Gagal memperbarui data inventaris");
+  }
+  return res.json();
+}

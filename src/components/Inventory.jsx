@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { getInventaris, DeleteInventaris, CreateInventaris } from "../api/InventarisService";
+import { getInventaris, DeleteInventaris, CreateInventaris, UpdateInventaris } from "../api/InventarisService";
 import {
   Trash2,
   Pencil,
@@ -9,6 +9,8 @@ import {
 export default function Inventory() {
   const [inventaris, setInventaris] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentInventarisId, setCurrentInventarisId] = useState(null);
 
   const [formData, setFormData] = useState({
     NamaBarang: '',
@@ -26,27 +28,28 @@ export default function Inventory() {
     }
   };
 
-  const handleCreateInventaris = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ...formData,
-        Stok: parseInt(formData.Stok, 10) || 0
-      };
-      const result = await CreateInventaris(payload);
-      if (result) {
-        setModalVisible(false);
-        setFormData({
-          NamaBarang: '',
-          Jenis: 'Benih',
-          Stok: ''
-        });
-        fetchInventaris();
-      }
-    } catch (error) {
-      console.error("Error creating inventaris:", error);
+  const handleSubmitInventaris = async (e) => {
+  e.preventDefault();
+  try {
+    if (currentInventarisId) {
+      // Logic Update
+      const updatedInventaris = await UpdateInventaris(currentInventarisId, formData);
+      setInventaris((current) =>
+        current.map((item) =>
+          item.InventarisId === currentInventarisId ? updatedInventaris : item
+        )
+      );
+    } else {
+      // Logic Create
+      const newInventaris = await CreateInventaris(formData);
+      setInventaris((current) => [...current, newInventaris]);
     }
-  };
+    
+    setModalVisible(false);
+  } catch (error) {
+    console.error("Error saving inventaris:", error);
+  }
+};
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -71,6 +74,17 @@ export default function Inventory() {
       console.error("Error deleting inventaris:", error);
     
     }
+  };
+
+  const handleEditInventaris = (inventaris) => {
+    setCurrentInventarisId(inventaris.InventarisId);
+    setFormData({
+      NamaBarang: inventaris.NamaBarang,
+      Jenis: inventaris.Jenis,
+      Stok: inventaris.Stok
+    });
+    setIsEditing(true);
+    setModalVisible(true);
   };
 
  return (
@@ -109,7 +123,9 @@ export default function Inventory() {
                     <td className="px-4 py-3">{item.Jenis}</td>
                     <td className="px-4 py-3">{item.Stok}</td>
                     <td className="px-4 py-3 m-5">
-                      <button className="btn-primary bg-blue-500 text-green px-2 py-1 rounded">  <Pencil size={18} /></button>
+                      <button className="btn-primary bg-blue-500 text-green px-2 py-1 rounded" onClick={() => handleEditInventaris(item)}>
+                        <Pencil size={18} />
+                      </button>
                       <button
                         className="btn-primary bg-red-500 text-green px-2 py-1 rounded ml-2"
                         onClick={() => {
@@ -131,7 +147,7 @@ export default function Inventory() {
             <div className="modal-content">
               <div className="card max-w-2xl p-6 mt-4">
                    <h3>Tambah Barang</h3>
-              <form className="flex flex-col gap-4 mt-4" onSubmit={handleCreateInventaris}>
+              <form className="flex flex-col gap-4 mt-4" onSubmit={handleSubmitInventaris}>
                 <div className="form-group">
                   <label htmlFor="namaBarang">Nama Barang</label>
                   <input type="text" id="namaBarang" name="NamaBarang" className="input-field m-2" value={formData.NamaBarang} onChange={(e) => setFormData({...formData, NamaBarang: e.target.value})}/>

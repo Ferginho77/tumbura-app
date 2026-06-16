@@ -19,6 +19,7 @@ import {
   Info,
   ShieldAlert,
   Sparkles,
+  Plus,
   ClipboardList
 } from "lucide-react";
  
@@ -28,7 +29,7 @@ export default function FieldControl() {
   const [selectedId, setSelectedId] = useState(null);
   const [configs, setConfigs] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterPhase, setFilterPhase] = useState("semua"); // semua, vegetatif, generatif, panen
+  const [filterPhase, setFilterPhase] = useState("semua");
  
   // Notification states
   const [notification, setNotification] = useState(null);
@@ -168,10 +169,7 @@ export default function FieldControl() {
   });
  
   const totalLahan = penanamans.length;
-  const readyToHarvest = penanamans.filter((p) => {
-    const prog = calculateProgress(p.TanggalTanam, p.RencanaPanen);
-    return prog.percent >= 90;
-  }).length;
+  const totalTanaman = penanamans.reduce((sum, p) => sum + (p.NamaTanaman ? 1 : 0), 0);
   const avgGrowthPercent =
     penanamans.length > 0
       ? Math.round(
@@ -241,7 +239,7 @@ export default function FieldControl() {
           </div>
           <div>
             <p className="text-xs text-text-muted font-medium">Siap Panen</p>
-            <h3 className="text-xl font-bold mt-0.5">{loading ? "-" : readyToHarvest} Lahan</h3>
+            <h3 className="text-xl font-bold mt-0.5">{totalTanaman} Lahan</h3>
           </div>
         </div>
  
@@ -281,21 +279,16 @@ export default function FieldControl() {
  
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
           <span className="text-xs text-text-muted font-medium whitespace-nowrap hidden sm:inline">
-            Filter Fase:
+            Tambah Lahan Baru:
           </span>
-          {["semua", "vegetatif", "generatif", "panen"].map((phase) => (
-            <button
-              key={phase}
-              onClick={() => setFilterPhase(phase)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all whitespace-nowrap ${
-                filterPhase === phase
-                  ? "bg-primary-500 text-white shadow-sm"
-                  : "bg-input text-text-muted border border-bg-200 hover:bg-bg-100"
-              }`}
-            >
-              {phase === "panen" ? "Siap Panen" : phase}
-            </button>
-          ))}
+          <button
+            onClick={() => alert("Fitur tambah lahan belum tersedia.")}
+            className="btn-primary flex items-center gap-2 shrink-0"
+          >
+            <Plus size={14} />
+            Lahan Baru
+          </button>
+         
         </div>
       </div>
  

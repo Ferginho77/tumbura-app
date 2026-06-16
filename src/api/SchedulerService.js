@@ -8,16 +8,18 @@ export const getSchedulers = async () => {
     return data;
 }
 
-export const UpdateStatus = async (SchedulerId, newStatus) => {
-    const res = await fetch(`${API_URL}/${SchedulerId}/status`, {
-        method: 'PUT',
+export const UpdateStatus = async (SchedulerId, Status) => {
+    const res = await fetch(`${API_URL}/${SchedulerId}`, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({
+            Status: Status
+        })
     });
-    const data = await res.json();
-    return data;
+
+    return await res.json();
 }
 
 export const DeleteScheduler = async (SchedulerId) => {
@@ -33,6 +35,7 @@ export const CreateScheduler = async (scheduler) => {
         headers: {
             'Content-Type': 'application/json',
         },
+
         body: JSON.stringify(scheduler),
     });
     if (!response.ok) {
@@ -41,3 +44,31 @@ export const CreateScheduler = async (scheduler) => {
     }
     return response.json();
 }   
+
+export const UpdateScheduler = async (
+  SchedulerId,
+  schedulerData
+) => {
+
+  const payload = {
+    ...schedulerData,
+    Tanggal: schedulerData.Tanggal
+      ? schedulerData.Tanggal.split("T")[0]
+      : ""
+  };
+
+  console.log("DATA KE BACKEND:", payload);
+
+  const res = await fetch(
+    `${API_URL}/${SchedulerId}/update`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  return await res.json();
+};

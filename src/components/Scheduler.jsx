@@ -8,7 +8,7 @@ import {
   Circle,
   Pencil,
 } from "lucide-react";
-import { getSchedulers, UpdateStatus, DeleteScheduler, CreateScheduler } from "../api/SchedulerService";
+import { getSchedulers, UpdateStatus, DeleteScheduler, CreateScheduler, UpdateScheduler } from "../api/SchedulerService";
 
 
 export default function Scheduler() {
@@ -20,6 +20,10 @@ export default function Scheduler() {
     Status: 'Pending'
   });
 
+const [editId, setEditId] = useState(null);
+
+
+
   const fetchSchedulers = async () => {
   try {
     const data = await getSchedulers();
@@ -30,7 +34,6 @@ export default function Scheduler() {
   }
 };
 
-// 2. Jalankan fetchSchedulers saat pertama kali komponen di-mount
 useEffect(() => {
   fetchSchedulers();
 }, []);
@@ -51,29 +54,79 @@ useEffect(() => {
       console.error("Error deleting scheduler:", error);
     
     }
-
   };
 
-  const handleCreateScheduler = async (e) => {
+const handleCreateScheduler = async (e) => {
   e.preventDefault();
+
   try {
-    const payload = {
-      ...formData
-    };
-    const result = await CreateScheduler(payload);
-    if (result) {
-      setFormData({
-        NamaScheduler: '',
-        Tanggal: '',
-        Status: 'Pending'
-      });
-      
-      // ✅ Sekarang ini tidak akan error lagi dan auto-refresh akan bekerja!
-      fetchSchedulers(); 
+    if (editId) {
+
+      const updatedScheduler =
+        await UpdateScheduler(
+          editId,
+          formData
+        );
+
+      setSchedulers((current) =>
+        current.map((scheduler) =>
+          scheduler.SchedulerId === editId
+            ? updatedScheduler
+            : scheduler
+        )
+      );
+
+      setEditId(null);
+
+    } else {
+
+      const newScheduler =
+        await CreateScheduler(formData);
+
+      setSchedulers((current) => [
+        ...current,
+        newScheduler
+      ]);
     }
+
+    setFormData({
+      NamaScheduler: "",
+      Tanggal: "",
+      Status: "Pending"
+    });
+
   } catch (error) {
-    console.error("Error creating schedulers :", error);
+    console.error(error);
   }
+};
+
+const handleEditScheduler = (scheduler) => {
+  setEditId(scheduler.SchedulerId);
+
+  setFormData({
+    NamaScheduler: scheduler.NamaScheduler,
+    Tanggal: scheduler.Tanggal.split("T")[0],
+    Status: scheduler.Status
+  });
+};
+
+const handleUpdateStatus = async (SchedulerId, Status) => {
+  const newStatus =
+    Status === "Done" ? "Pending" : "Done";
+
+  const updatedScheduler =
+    await UpdateStatus(SchedulerId, newStatus);
+
+  setSchedulers((current) =>
+    current.map((scheduler) =>
+      scheduler.SchedulerId === SchedulerId
+        ? {
+            ...scheduler,
+            Status: updatedScheduler.Status,
+          }
+        : scheduler
+    )
+  );
 };
 
   return (
@@ -96,7 +149,7 @@ useEffect(() => {
           <input
             type="text"
             className="input-field flex-1"
-            placeholder="Add new maintenance task..."
+            placeholder="Tambah tugas baru..."
             value={formData.NamaScheduler}
             onChange={(e) => setFormData({ ...formData, NamaScheduler: e.target.value })}
           />
@@ -116,7 +169,7 @@ useEffect(() => {
             className="btn-primary flex items-center gap-2 shrink-0"
           >
             <Plus size={18} />
-            Add
+            Tambah
           </button>
         </form>
 
@@ -125,8 +178,8 @@ useEffect(() => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b text-sm font-semibold">
-                <th className="py-3">Task</th>
-                <th className="py-3">Date</th>
+                <th className="py-3">Tugas</th>
+                <th className="py-3">Tanggal</th>
                 <th className="py-3">Status</th>
                 <th className="py-3 text-center">Action</th>
               </tr>
@@ -157,14 +210,18 @@ useEffect(() => {
                     <td className="py-4">
                       <button
                         className="flex items-center gap-2"
+                       onClick={() =>
+                                      handleUpdateStatus(
+                                        scheduler.SchedulerId,
+                                        scheduler.Status
+                                      )
+                                    }
                       >
                         {scheduler.Status === "Done" ? (
                           <CheckCircle size={20} className="text-green-500" />
                         ) : (
                           <Circle size={20} className="text-gray-400" />
                         )}
-                          <Circle size={20} className="text-gray-400" />
-
                         <span className="text-sm">
                          
                         </span>
@@ -175,8 +232,8 @@ useEffect(() => {
                     <td className="py-4">
                       <div className="flex items-center justify-center gap-3">
                         {/* Edit */}
-                        <button
-                         
+                       <button
+                          onClick={() => handleEditScheduler(scheduler)}
                           className="text-blue-500 hover:scale-110 transition"
                         >
                           <Pencil size={18} />
@@ -203,7 +260,7 @@ useEffect(() => {
 
           {/* Empty state */}
             <div className="text-center py-10 text-gray-400">
-              No maintenance schedule yet
+              Tidak ada tugas terjadwal. Tambahkan tugas baru untuk memulai!
             </div>
         </div>
       </div>
