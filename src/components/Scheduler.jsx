@@ -7,12 +7,15 @@ import {
   CheckCircle,
   Circle,
   Pencil,
+  RefreshCw,
 } from "lucide-react";
 import { getSchedulers, UpdateStatus, DeleteScheduler, CreateScheduler, UpdateScheduler } from "../api/SchedulerService";
 
 
 export default function Scheduler() {
   const [schedulers, setSchedulers] = useState([]);
+
+  const [loading, setLoading] = useState(true);
 
    const [formData, setFormData] = useState({
     NamaScheduler: '',
@@ -26,11 +29,15 @@ const [editId, setEditId] = useState(null);
 
   const fetchSchedulers = async () => {
   try {
+    setLoading(true);
     const data = await getSchedulers();
     console.log("Schedulers:", data);
     setSchedulers(data);
   } catch (error) {
     console.error("Error fetching schedulers:", error);
+  }
+  finally {
+    setLoading(false);
   }
 };
 
@@ -130,6 +137,12 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
 };
 
   return (
+    loading ? (
+      <div className="card p-12 text-center flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="animate-spin text-primary-500" size={32} />
+        <p className="text-text-muted font-medium">Memuat data scheduler...</p>
+      </div>
+    ) : (
     <div className="scheduler animate-fade-in">
       {/* Header */}
       <div className="mb-6">
@@ -150,12 +163,14 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
             type="text"
             className="input-field flex-1"
             placeholder="Tambah tugas baru..."
+            required
             value={formData.NamaScheduler}
             onChange={(e) => setFormData({ ...formData, NamaScheduler: e.target.value })}
           />
           <input
             type="date"
             className="input-field"
+            required
             value={formData.Tanggal}
           onChange={(e) => setFormData({ ...formData, Tanggal: e.target.value })}
           />
@@ -265,5 +280,6 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
         </div>
       </div>
     </div>
+    )
   );
 }

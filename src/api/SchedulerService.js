@@ -1,5 +1,5 @@
 const API_URL = 'https://tumbura-be-691717727272.asia-southeast2.run.app/schedulers';
-// const API_URL = 'http://localhost:8080/schedulers';
+// const API_URL = '    ';
 
 
 export const getSchedulers = async () => {

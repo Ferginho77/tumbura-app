@@ -1,5 +1,5 @@
-const API_Inventaris = 'https://tumbura-be-691717727272.asia-southeast2.run.app/inventaris';
-// const API_Inventaris = 'http://localhost:8080/inventaris';
+// const API_Inventaris = 'https://localhost:8080/inventaris';
+const API_Inventaris = 'https://be-project-nu.vercel.app/inventaris';
 
 
 export const getInventaris = async () => {
@@ -16,12 +16,19 @@ export const DeleteInventaris = async (InventarisId) => {
 }
 
 export const CreateInventaris = async (inventaris) => {
+     const payload = {
+      ...inventaris,
+      Stok: parseInt(inventaris.Stok, 10)
+    };
+    
+    console.log("DATA KE BACKEND:", payload);
+
     const response = await fetch(API_Inventaris, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(inventaris),
+        body: JSON.stringify(payload),
     });
     if (!response.ok) {
         const errorText = await response.text();

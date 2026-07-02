@@ -4,6 +4,7 @@ import {
   Trash2,
   Pencil,
   Inbox,
+  RefreshCw,
 } from "lucide-react";
 
 export default function Inventory() {
@@ -11,6 +12,7 @@ export default function Inventory() {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentInventarisId, setCurrentInventarisId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     NamaBarang: '',
@@ -20,11 +22,15 @@ export default function Inventory() {
 
   const fetchInventaris = async () => {
     try {
+      setLoading(true);
       const data = await getInventaris();
       console.log("Inventaris:", data);
       setInventaris(data);
     } catch (error) {
       console.error("Error fetching inventaris:", error);
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -88,6 +94,13 @@ export default function Inventory() {
   };
 
  return (
+  // show loading state while fetching
+  loading ? (
+    <div className="card p-12 text-center flex flex-col items-center justify-center gap-3">
+      <RefreshCw className="animate-spin text-primary-500" size={32} />
+      <p className="text-text-muted font-medium">Memuat data inventaris...</p>
+    </div>
+  ) : (
    <div className="inventory animate-fade-in">
      <h2 className="text-2xl font-bold mb-4">Inventory Management</h2>
         <div className="flex flex-col gap-4 md:col-span-1 lg:col-span-1">
@@ -150,7 +163,7 @@ export default function Inventory() {
               <form className="flex flex-col gap-4 mt-4" onSubmit={handleSubmitInventaris}>
                 <div className="form-group">
                   <label htmlFor="namaBarang">Nama Barang</label>
-                  <input type="text" id="namaBarang" name="NamaBarang" className="input-field m-2" value={formData.NamaBarang} onChange={(e) => setFormData({...formData, NamaBarang: e.target.value})}/>
+                  <input type="text" id="namaBarang" name="NamaBarang" className="input-field m-2" value={formData.NamaBarang} onChange={(e) => setFormData({...formData, NamaBarang: e.target.value})} required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="Jenis">Jenis Barang</label>
@@ -184,6 +197,7 @@ export default function Inventory() {
           </div>
         )}
    </div>
+  )
  );
 }
 

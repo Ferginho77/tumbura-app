@@ -1,4 +1,4 @@
-const API_TANAMAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/tanamans';
+const API_TANAMAN = 'https://be-project-nu.vercel.app/tanamans';
 // const API_TANAMAN = 'http://localhost:8080/tanamans';
 
 export const GetTanamans = async () => {
