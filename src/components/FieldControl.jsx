@@ -436,10 +436,10 @@ export default function FieldControl() {
                         className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       >
                         <option value="">Pilih Jenis Tanaman</option>
-                        {tanaman.map((t) => (
-                        <option key={t.TanamanId} value={t.TanamanId}>
-                          {t.NamaTanaman}
-                        </option>
+                        {tanaman.map((item, index) => (
+                       <option key={item.TanamanId || index} value={item.NamaTanaman || item.NamaTanaman}>
+                {item.NamaTanaman || item.NamaTanaman}
+              </option>
                       ))}
                       </select>
                     </div>
