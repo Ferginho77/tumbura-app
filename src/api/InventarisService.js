@@ -1,4 +1,4 @@
-// const API_Inventaris = 'https://localhost:8080/inventaris';
+// const API_Inventaris = 'http://localhost:8080/inventaris';
 const API_Inventaris = 'https://be-project-nu.vercel.app/inventaris';
 
 

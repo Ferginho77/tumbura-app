@@ -171,10 +171,6 @@ export default function Dashboard() {
               </option>
             ))}
           </select>
-          <select className="input-field" value={phase} onChange={(e) => setPhase(e.target.value)}>
-            <option value="vegetative">Vegetative</option>
-            <option value="generative">Generative</option>
-          </select>
         </div>
       </div>
       <div className="flex gap-2">
@@ -216,7 +212,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 p-4 rounded-xl bg-bg-50" ref={dashboardRef}>
         {/* Left Columns: Sliders */}
         <div className="card flex flex-col gap-6 md:col-span-2 lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Environment Controls</h3>
+          <h3 className="text-lg font-semibold mb-4">Plants Parameters Controls</h3>
 
           <div className="control-group">
             <div className="flex justify-between items-center mb-2">

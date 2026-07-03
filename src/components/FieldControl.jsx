@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLahan, CreateLahan, UpdateLahan } from "../api/LahanService";
+import { getPenanaman, CreatePenanaman } from "../api/PenanamanService";
+import { GetTanamans } from "../api/TanamanService";
 import { Layers, Search, Compass, Plus, RefreshCw } from "lucide-react";
  
 export default function FieldControl() {
   const [lahan, setLahans] = useState([]);
+  const [penanamans, setPenanamans] = useState([]);
+  const [tanaman, setTanaman] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentLahanId, setCurrentLahanId] = useState(null);
@@ -17,24 +21,33 @@ export default function FieldControl() {
     Kondisi: "Baik",
   });
   const [penanamanFormData, setPenanamanFormData] = useState({
-    NamaTanaman: "",
+    TanamanId: "",
+    TanggalTanam: "",
+    RencanaPanen: "",
+    JumlahBibit: "",
     LahanId: "",
-    Status: "Pending",
+    Fase: "Vegetatif",
   });
 
   useEffect(() => {
-    const fetchLahans = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getLahan();
-        setLahans(Array.isArray(data) ? data : []);
+        const [dataLahan, dataPenanaman, dataTanaman] = await Promise.all([
+          getLahan(),
+          getPenanaman(),
+          GetTanamans()
+        ]);
+        setLahans(Array.isArray(dataLahan) ? dataLahan : []);
+        setPenanamans(Array.isArray(dataPenanaman) ? dataPenanaman : []);
+        setTanaman(Array.isArray(dataTanaman) ? dataTanaman : []);
       } catch (error) {
-        console.error("Gagal memuat data lahan:", error);
+        console.error("Gagal memuat data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLahans();
+    fetchData();
   }, []);
 
   const totalLahan = lahan.length;
@@ -65,7 +78,14 @@ export default function FieldControl() {
     setIsModalOpen(true);
     setCurrentLahanId(null);
     setCurrentPenanamanLahanId(lahanId);
-    setPenanamanFormData({ NamaTanaman: "", LahanId: lahanId ? String(lahanId) : "", Status: "Pending" });
+    setPenanamanFormData({ 
+      TanamanId: "", 
+      TanggalTanam: "", 
+      RencanaPanen: "", 
+      JumlahBibit: "", 
+      LahanId: lahanId ? String(lahanId) : "", 
+      Fase: "Vegetatif" 
+    });
   };
 
   const closeModal = () => {
@@ -87,8 +107,20 @@ export default function FieldControl() {
 
   const handleSubmitPenanaman = async (e) => {
     e.preventDefault();
-    console.log("Tambah Penanaman:", penanamanFormData);
-    closeModal();
+    try {
+      await CreatePenanaman(penanamanFormData);
+      
+      const [dataLahan, dataPenanaman] = await Promise.all([
+        getLahan(),
+        getPenanaman()
+      ]);
+      setLahans(Array.isArray(dataLahan) ? dataLahan : []);
+      setPenanamans(Array.isArray(dataPenanaman) ? dataPenanaman : []);
+      
+      closeModal();
+    } catch (error) {
+      console.error("Error saving penanaman:", error);
+    }
   };
 
   const handleSubmitLahan = async (e) => {
@@ -121,6 +153,8 @@ export default function FieldControl() {
     });
     setIsModalOpen(true);
   };
+
+  
 
   return (
     <div className="p-1 md:p-4 max-w-7xl mx-auto space-y-6">
@@ -196,13 +230,15 @@ export default function FieldControl() {
         ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
         : "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
 
+    const associatedPenanaman = penanamans.find(p => p.LahanId === item.LahanId);
+
     return (
       <div
         key={item.LahanId}
-        className="card relative overflow-hidden border border-bg-200 bg-card hover:border-primary-300 transition-all duration-200"
+        className={`card relative overflow-hidden border transition-all duration-200 ${associatedPenanaman ? 'border-primary-400 bg-primary-50/30' : 'border-bg-200 bg-card hover:border-primary-300'}`}
       >
         {/* Header Line */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-primary-500" />
+        <div className={`absolute top-0 left-0 w-full h-1.5 ${associatedPenanaman ? 'bg-primary-500' : 'bg-bg-300'}`} />
 
         <div className="p-5">
           {/* Header */}
@@ -226,7 +262,7 @@ export default function FieldControl() {
             <div>
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-text-muted">
-                  Luas Lahan
+                  Luas Petak
                 </span>
 
                 <span className="text-primary-600">
@@ -234,18 +270,52 @@ export default function FieldControl() {
                 </span>
               </div>
             </div>
+
+            {associatedPenanaman ? (
+              <>
+                <div className="pt-2 border-t border-bg-200">
+                   <span className="text-xs font-bold text-primary-600">Lahan Aktif (Ditanami {associatedPenanaman.NamaTanaman})</span>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-text-muted">Awal Tanam</span>
+                    <span className="text-text-dark">{formatTanggal(associatedPenanaman.TanggalTanam)}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-text-muted">Rencana Panen</span>
+                    <span className="text-text-dark">{formatTanggal(associatedPenanaman.RencanaPanen)}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="pt-2 border-t border-bg-200">
+                   <span className="text-xs font-bold text-text-muted italic">Belum ada penanaman</span>
+              </div>
+            )}
           </div>
 
           {/* Action */}
           <div className="mt-5 flex gap-2">
 
-            <button
-              type="button"
-              onClick={() => openPenanamanModal(item.LahanId)}
-              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition"
-            >
-              + Tambah Penanaman
-            </button>
+            {!associatedPenanaman ? (
+              <button
+                type="button"
+                onClick={() => openPenanamanModal(item.LahanId)}
+                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition"
+              >
+                + Tambah Penanaman
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="flex-1 bg-primary-100 text-primary-600 rounded-lg py-2.5 text-sm font-semibold cursor-not-allowed"
+              >
+                Sudah Ditanami
+              </button>
+            )}
 
             <button
               type="button"
@@ -359,41 +429,70 @@ export default function FieldControl() {
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Jenis Tanaman
                       </label>
-                      <select name="TanamanId" id="" className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100">
-                        <option value="Anggur">Anggur</option>
-                        <option value="Semangka">Semangka</option>
+                        <select 
+                        name="TanamanId" 
+                        value={penanamanFormData.TanamanId}
+                        onChange={handlePenanamanChange}
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                      >
+                        <option value="">Pilih Jenis Tanaman</option>
+                        {tanaman.map((t) => (
+                        <option key={t.TanamanId} value={t.TanamanId}>
+                          {t.NamaTanaman}
+                        </option>
+                      ))}
                       </select>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Tanggal Tanam
                       </label>
-                     <input type="date" className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" name="TanggalTanam" />
+                     <input 
+                       type="date" 
+                       name="TanggalTanam"
+                       value={penanamanFormData.TanggalTanam}
+                       onChange={handlePenanamanChange}
+                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" 
+                       required
+                     />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Rencana Panen
                       </label>
-                     <input type="date" className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" name="TanggalPanen" />
+                     <input 
+                       type="date" 
+                       name="RencanaPanen"
+                       value={penanamanFormData.RencanaPanen}
+                       onChange={handlePenanamanChange}
+                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" 
+                       required
+                     />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Jumlah Bibit
                       </label>
-                     <input type="number" className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" name="JumlahBibit" />
+                     <input 
+                       type="number" 
+                       name="JumlahBibit"
+                       value={penanamanFormData.JumlahBibit}
+                       onChange={handlePenanamanChange}
+                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" 
+                       required
+                     />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
-                        LahanId
-                      </label>
+                    <div className="space-y-1.5"> 
                       <input
                         type="number"
                         name="LahanId"
                         value={penanamanFormData.LahanId}
                         onChange={handlePenanamanChange}
                         placeholder="Masukkan LahanId"
-                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100 bg-bg-50"
+                        readOnly
                         required
+                        hidden
                       />
                     </div>
                     <div className="pt-4 flex justify-end gap-2 mt-2">

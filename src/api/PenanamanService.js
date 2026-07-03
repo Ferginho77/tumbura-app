@@ -1,12 +1,12 @@
 import axios from "axios";
 
-const API_PENANAMAN = 'http://localhost:8080/penanamans';
-const API_LAHAN = 'http://localhost:8080/lahans';
-const API_TANAMAN = 'http://localhost:8080/tanamans';
+// const API_PENANAMAN = 'http://localhost:8080/penanamans';
+// const API_LAHAN = 'http://localhost:8080/lahans';
+// const API_TANAMAN = 'http://localhost:8080/tanamans';
 
-// const API_PENANAMAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/penanamans';
-// const API_LAHAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/lahans';
-// const API_TANAMAN = 'https://tumbura-be-691717727272.asia-southeast2.run.app/tanamans';
+const API_PENANAMAN = 'https://be-project-nu.vercel.app/penanamans';
+const API_LAHAN = 'https://be-project-nu.vercel.app/tanamans/lahans';
+const API_TANAMAN = 'https://be-project-nu.vercel.app/tanamans/tanamans';
 
 
 export const getPenanaman = async () => {
@@ -51,4 +51,29 @@ export const DeletePenanaman = async (PenanamanId) => {
         method: 'DELETE',
     });
     return response.ok;
+}
+
+export const CreatePenanaman = async (penanaman) => {
+    const payload = {
+        ...penanaman,
+        JumlahBibit: parseInt(penanaman.JumlahBibit, 10),
+        TanamanId: parseInt(penanaman.TanamanId, 10),
+        LahanId: parseInt(penanaman.LahanId, 10)
+    };
+
+    console.log("DATA PENANAMAN KE BACKEND:", payload);
+
+    const response = await fetch(API_PENANAMAN, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Gagal membuat data penanaman");
+    }
+    return response.json();
 }
