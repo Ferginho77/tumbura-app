@@ -5,8 +5,8 @@ import axios from "axios";
 // const API_TANAMAN = 'http://localhost:8080/tanamans';
 
 const API_PENANAMAN = 'https://be-project-nu.vercel.app/penanamans';
-const API_LAHAN = 'https://be-project-nu.vercel.app/tanamans/lahans';
-const API_TANAMAN = 'https://be-project-nu.vercel.app/tanamans/tanamans';
+const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
+const API_TANAMAN = 'https://be-project-nu.vercel.app/tanamans';
 
 
 export const getPenanaman = async () => {
