@@ -1,5 +1,5 @@
-const API_URL = 'https://be-project-nu.vercel.app/schedulers';
-// const API_URL = 'http://localhost:8080/schedulers';
+// const API_URL = 'https://be-project-nu.vercel.app/schedulers';
+const API_URL = 'http://localhost:8080/schedulers';
 
 
 export const getSchedulers = async () => {

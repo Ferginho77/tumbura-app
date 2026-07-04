@@ -1,12 +1,12 @@
 import axios from "axios";
 
-// const API_PENANAMAN = 'http://localhost:8080/penanamans';
-// const API_LAHAN = 'http://localhost:8080/lahans';
-// const API_TANAMAN = 'http://localhost:8080/tanamans';
+const API_PENANAMAN = 'http://localhost:8080/penanamans';
+const API_LAHAN = 'http://localhost:8080/lahans';
+const API_TANAMAN = 'http://localhost:8080/tanamans';
 
-const API_PENANAMAN = 'https://be-project-nu.vercel.app/penanamans';
-const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
-const API_TANAMAN = 'https://be-project-nu.vercel.app/tanamans';
+// const API_PENANAMAN = 'https://be-project-nu.vercel.app/penanamans';
+// const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
+// const API_TANAMAN = 'https://be-project-nu.vercel.app/tanamans';
 
 
 export const getPenanaman = async () => {
@@ -74,6 +74,27 @@ export const CreatePenanaman = async (penanaman) => {
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || "Gagal membuat data penanaman");
+    }
+    return response.json();
+}
+
+export const UpdatePenanaman = async (PenanamanId, penanaman) => {
+    const payload = {
+        ...penanaman,
+        JumlahBibit: parseInt(penanaman.JumlahBibit, 10),
+        TanamanId: parseInt(penanaman.TanamanId, 10),
+        LahanId: parseInt(penanaman.LahanId, 10),
+    };
+
+    const response = await fetch(`${API_PENANAMAN}/${PenanamanId}/update`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Gagal update data penanaman");
     }
     return response.json();
 }

@@ -1,52 +1,62 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLahan, CreateLahan, UpdateLahan } from "../api/LahanService";
-import { getPenanaman, CreatePenanaman } from "../api/PenanamanService";
+import { getPenanaman, CreatePenanaman, UpdatePenanaman } from "../api/PenanamanService";
+import { getSchedulers, UpdateStatus } from "../api/SchedulerService";
 import { GetTanamans } from "../api/TanamanService";
-import { Layers, Search, Compass, Plus, RefreshCw } from "lucide-react";
+import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
  
 export default function FieldControl() {
   const [lahan, setLahans] = useState([]);
   const [penanamans, setPenanamans] = useState([]);
   const [tanaman, setTanaman] = useState([]);
+  const [schedulers, setSchedulers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentLahanId, setCurrentLahanId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState("lahan");
   const [currentPenanamanLahanId, setCurrentPenanamanLahanId] = useState(null);
+  const [currentPenanamanId, setCurrentPenanamanId] = useState(null);
+  const [selectedLahanId, setSelectedLahanId] = useState(null);
+  const [updatingSchedulerId, setUpdatingSchedulerId] = useState(null);
   const [formData, setFormData] = useState({
     NamaLahan: "",
     LuasTanah: "",
     Kondisi: "Baik",
+    StatusLahan: "Aktif"
   });
   const [penanamanFormData, setPenanamanFormData] = useState({
     TanamanId: "",
     TanggalTanam: "",
     RencanaPanen: "",
     JumlahBibit: "",
-    LahanId: "",
+    LahanId: "",  
     Fase: "Vegetatif",
+    Status: "Aktif",
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dataLahan, dataPenanaman, dataTanaman] = await Promise.all([
-          getLahan(),
-          getPenanaman(),
-          GetTanamans()
+        const [dataLahan, dataPenanaman, dataTanaman, dataScheduler] = await Promise.all([
+          getLahan().catch(() => []),
+          getPenanaman().catch(() => []),
+          GetTanamans().catch(() => []),
+          getSchedulers().catch(() => [])
         ]);
-        setLahans(Array.isArray(dataLahan) ? dataLahan : []);
-        setPenanamans(Array.isArray(dataPenanaman) ? dataPenanaman : []);
-        setTanaman(Array.isArray(dataTanaman) ? dataTanaman : []);
+        setLahans(Array.isArray(dataLahan) ? dataLahan : (dataLahan?.data || []));
+        setPenanamans(Array.isArray(dataPenanaman) ? dataPenanaman : (dataPenanaman?.data || []));
+        const tanamanArr = dataTanaman?.data || dataTanaman;
+        setTanaman(Array.isArray(tanamanArr) ? tanamanArr : []);
+        const schedArr = dataScheduler?.data || dataScheduler;
+        setSchedulers(Array.isArray(schedArr) ? schedArr : []);
       } catch (error) {
         console.error("Gagal memuat data:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -69,7 +79,7 @@ export default function FieldControl() {
 
   const openModal = () => {
     setCurrentLahanId(null);
-    setFormData({ NamaLahan: "", LuasTanah: "", Kondisi: "Baik" });
+    setFormData({ NamaLahan: "", LuasTanah: "", Kondisi: "Baik", StatusLahan: "Aktif" });
     setIsModalOpen(true);
   };
 
@@ -84,14 +94,33 @@ export default function FieldControl() {
       RencanaPanen: "", 
       JumlahBibit: "", 
       LahanId: lahanId ? String(lahanId) : "", 
-      Fase: "Vegetatif" 
+      Fase: "Vegetatif",
+      Status: "Aktif",
     });
+  };
+
+  const openEditPenanamanModal = (penanaman) => {
+    setModalType("penanaman");
+    setCurrentPenanamanId(penanaman.PenanamanId);
+    setCurrentPenanamanLahanId(penanaman.LahanId);
+    setCurrentLahanId(null);
+    setPenanamanFormData({
+      TanamanId: String(penanaman.TanamanId),
+      TanggalTanam: penanaman.TanggalTanam ? penanaman.TanggalTanam.split('T')[0] : "",
+      RencanaPanen: penanaman.RencanaPanen ? penanaman.RencanaPanen.split('T')[0] : "",
+      JumlahBibit: String(penanaman.JumlahBibit),
+      LahanId: String(penanaman.LahanId),
+      Fase: penanaman.Fase || "Vegetatif",
+      Status: penanaman.Status || "Aktif",
+    });
+    setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setCurrentLahanId(null);
     setCurrentPenanamanLahanId(null);
+    setCurrentPenanamanId(null);
     setModalType("lahan");
   };
 
@@ -105,18 +134,44 @@ export default function FieldControl() {
     setPenanamanFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleToggleScheduler = async (scheduler) => {
+    const newStatus = scheduler.Status === 'Done' ? 'Pending' : 'Done';
+    setUpdatingSchedulerId(scheduler.SchedulerId);
+    try {
+      await UpdateStatus(scheduler.SchedulerId, newStatus);
+      setSchedulers(prev => prev.map(s =>
+        s.SchedulerId === scheduler.SchedulerId ? { ...s, Status: newStatus } : s
+      ));
+    } catch (err) {
+      console.error('Gagal update status scheduler:', err);
+    } finally {
+      setUpdatingSchedulerId(null);
+    }
+  };
+
+  const refreshData = async () => {
+    const [dataLahan, dataPenanaman, dataScheduler] = await Promise.all([
+      getLahan().catch(() => []),
+      getPenanaman().catch(() => []),
+      getSchedulers().catch(() => [])
+    ]);
+    const lahanArr = dataLahan?.data || dataLahan;
+    const penArr = dataPenanaman?.data || dataPenanaman;
+    const schedArr = dataScheduler?.data || dataScheduler;
+    setLahans(Array.isArray(lahanArr) ? lahanArr : []);
+    setPenanamans(Array.isArray(penArr) ? penArr : []);
+    setSchedulers(Array.isArray(schedArr) ? schedArr : []);
+  };
+
   const handleSubmitPenanaman = async (e) => {
     e.preventDefault();
     try {
-      await CreatePenanaman(penanamanFormData);
-      
-      const [dataLahan, dataPenanaman] = await Promise.all([
-        getLahan(),
-        getPenanaman()
-      ]);
-      setLahans(Array.isArray(dataLahan) ? dataLahan : []);
-      setPenanamans(Array.isArray(dataPenanaman) ? dataPenanaman : []);
-      
+      if (currentPenanamanId) {
+        await UpdatePenanaman(currentPenanamanId, penanamanFormData);
+      } else {
+        await CreatePenanaman(penanamanFormData);
+      }
+      await refreshData();
       closeModal();
     } catch (error) {
       console.error("Error saving penanaman:", error);
@@ -150,6 +205,7 @@ export default function FieldControl() {
       NamaLahan: item.NamaLahan,
       LuasTanah: item.LuasTanah,
       Kondisi: item.Kondisi,
+      StatusLahan: item.StatusLahan
     });
     setIsModalOpen(true);
   };
@@ -231,11 +287,19 @@ export default function FieldControl() {
         : "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
 
     const associatedPenanaman = penanamans.find(p => p.LahanId === item.LahanId);
+    const isSelected = selectedLahanId === item.LahanId;
 
     return (
       <div
         key={item.LahanId}
-        className={`card relative overflow-hidden border transition-all duration-200 ${associatedPenanaman ? 'border-primary-400 bg-primary-50/30' : 'border-bg-200 bg-card hover:border-primary-300'}`}
+        onClick={() => setSelectedLahanId(isSelected ? null : item.LahanId)}
+        className={`card relative overflow-hidden border transition-all duration-200 cursor-pointer ${
+          isSelected
+            ? 'border-primary-500 ring-2 ring-primary-300 bg-primary-50/40'
+            : associatedPenanaman
+            ? 'border-primary-400 bg-primary-50/30 hover:border-primary-500'
+            : 'border-bg-200 bg-card hover:border-primary-300'
+        }`}
       >
         {/* Header Line */}
         <div className={`absolute top-0 left-0 w-full h-1.5 ${associatedPenanaman ? 'bg-primary-500' : 'bg-bg-300'}`} />
@@ -248,6 +312,11 @@ export default function FieldControl() {
                 className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
               >
                 {item.Kondisi}
+              </span>
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
+              >
+                {item.StatusLahan}
               </span>
 
               <h3 className="text-lg font-bold text-text-dark mt-2">
@@ -273,21 +342,115 @@ export default function FieldControl() {
 
             {associatedPenanaman ? (
               <>
-                <div className="pt-2 border-t border-bg-200">
-                   <span className="text-xs font-bold text-primary-600">Lahan Aktif (Ditanami {associatedPenanaman.NamaTanaman})</span>
+                <div className="pt-2 border-t border-bg-200 flex items-center justify-between">
+                  <span className="text-xs font-bold text-primary-600">Ditanami {associatedPenanaman.NamaTanaman}</span>
+                  {(() => {
+                    const s = associatedPenanaman.Status;
+                    const cls = s === 'Aktif'
+                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                      : s === 'Panen'
+                      ? 'bg-yellow-50 text-yellow-600 dark:bg-yellow-950/20 dark:text-yellow-400'
+                      : s === 'Done'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400'
+                      : 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400';
+                    return (
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${cls}`}>
+                        {s || 'Aktif'}
+                      </span>
+                    );
+                  })()}
                 </div>
-                <div>
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-text-muted">Awal Tanam</span>
-                    <span className="text-text-dark">{formatTanggal(associatedPenanaman.TanggalTanam)}</span>
-                  </div>
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-text-muted">Awal Tanam</span>
+                  <span className="text-text-dark">{formatTanggal(associatedPenanaman.TanggalTanam)}</span>
                 </div>
-                <div>
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-text-muted">Rencana Panen</span>
-                    <span className="text-text-dark">{formatTanggal(associatedPenanaman.RencanaPanen)}</span>
-                  </div>
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-text-muted">Fase</span>
+                  <span className="text-text-dark">{associatedPenanaman.Fase || '-'}</span>
                 </div>
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-text-muted">Rencana Panen</span>
+                  <span className="text-text-dark">{formatTanggal(associatedPenanaman.RencanaPanen)}</span>
+                </div>
+
+                {/* ── TASK HARI INI ── */}
+                {(() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  const todayTasks = schedulers.filter(
+                    s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Tanggal === today
+                  );
+                  if (todayTasks.length === 0) return null;
+                  return (
+                    <div className="mt-2 pt-2 border-t border-bg-200">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <CalendarCheck size={13} className="text-amber-500" />
+                        <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Task Hari Ini</span>
+                      </div>
+                      <div className="space-y-1">
+                        {todayTasks.map(task => (
+                          <div key={task.SchedulerId} className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 rounded-lg px-2.5 py-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <Clock size={11} className="text-amber-500 shrink-0" />
+                              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">{task.NamaScheduler}</span>
+                            </div>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                              task.Status === 'Done'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : task.Status === 'Dibatalkan'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>{task.Status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── AKTIVITAS TERAKHIR ── */}
+                {(() => {
+                  const penSchedulers = schedulers
+                    .filter(s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Status === 'Done')
+                    .sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+                  const last = penSchedulers[0];
+                  const nextPending = schedulers
+                    .filter(s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Status === 'Pending')
+                    .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))[0];
+                  return (
+                    <div className="mt-2 pt-2 border-t border-bg-200 space-y-1.5">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <CheckCircle2 size={13} className="text-primary-500" />
+                        <span className="text-[11px] font-bold text-primary-600 uppercase tracking-wide">Aktivitas Terakhir</span>
+                      </div>
+                      {last ? (
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg px-2.5 py-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{last.NamaScheduler}</p>
+                              <p className="text-[10px] text-emerald-600 mt-0.5">{formatTanggal(last.Tanggal)}</p>
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Done</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-text-muted italic">Belum ada aktivitas selesai</p>
+                      )}
+                      {nextPending && (
+                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg px-2.5 py-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-[10px] text-blue-500 font-semibold mb-0.5">Berikutnya</p>
+                              <p className="text-xs font-bold text-blue-700 dark:text-blue-300">{nextPending.NamaScheduler}</p>
+                              <p className="text-[10px] text-blue-600 mt-0.5">{formatTanggal(nextPending.Tanggal)}</p>
+                            </div>
+                            <AlertCircle size={14} className="text-blue-400 shrink-0 mt-0.5" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
               </>
             ) : (
               <div className="pt-2 border-t border-bg-200">
@@ -303,17 +466,17 @@ export default function FieldControl() {
               <button
                 type="button"
                 onClick={() => openPenanamanModal(item.LahanId)}
-                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition"
+                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
               >
-                + Tambah Penanaman
+                <Plus size={14} /> Tambah Penanaman
               </button>
             ) : (
               <button
                 type="button"
-                disabled
-                className="flex-1 bg-primary-100 text-primary-600 rounded-lg py-2.5 text-sm font-semibold cursor-not-allowed"
+                onClick={() => openEditPenanamanModal(associatedPenanaman)}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
               >
-                Sudah Ditanami
+                <Pencil size={14} /> Edit Penanaman
               </button>
             )}
 
@@ -333,6 +496,142 @@ export default function FieldControl() {
 </div>
             )}
           </div>
+
+          {/* ── RIGHT COLUMN: Scheduler Checklist ── */}
+          <div className="lg:col-span-1">
+            <div className="card border border-bg-200 bg-card rounded-xl sticky top-4">
+              {(() => {
+                const selLahan = lahan.find(l => l.LahanId === selectedLahanId);
+                const selPenanaman = selLahan
+                  ? penanamans.find(p => p.LahanId === selLahan.LahanId)
+                  : null;
+                const selSchedulers = selPenanaman
+                  ? schedulers
+                      .filter(s => s.PenanamanId === selPenanaman.PenanamanId)
+                      .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
+                  : [];
+
+                const today = new Date().toISOString().split('T')[0];
+                const done = selSchedulers.filter(s => s.Status === 'Done').length;
+                const total = selSchedulers.length;
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+                if (!selLahan) return (
+                  <div className="p-6 flex flex-col items-center justify-center gap-3 text-center min-h-[300px]">
+                    <div className="w-14 h-14 rounded-full bg-bg-100 flex items-center justify-center">
+                      <CalendarCheck size={24} className="text-text-muted" />
+                    </div>
+                    <p className="text-sm font-semibold text-text-dark">Pilih Lahan</p>
+                    <p className="text-xs text-text-muted">Klik salah satu card lahan untuk melihat checklist jadwal aktivitas</p>
+                  </div>
+                );
+
+                return (
+                  <>
+                    {/* Panel Header */}
+                    <div className="p-4 border-b border-bg-200 bg-bg-50 rounded-t-xl">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="text-sm font-bold text-text-dark">{selLahan.NamaLahan}</h3>
+                          {selPenanaman
+                            ? <p className="text-xs text-text-muted mt-0.5">Tanaman: {selPenanaman.NamaTanaman}</p>
+                            : <p className="text-xs text-amber-500 mt-0.5 italic">Belum ada penanaman</p>
+                          }
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedLahanId(null); }}
+                          className="text-text-muted hover:text-text-dark text-lg leading-none transition-colors"
+                        >✕</button>
+                      </div>
+
+                      {/* Progress bar */}
+                      {total > 0 && (
+                        <div className="mt-3">
+                          <div className="flex justify-between text-[11px] font-semibold mb-1">
+                            <span className="text-text-muted">{done}/{total} task selesai</span>
+                            <span className="text-primary-600">{pct}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-bg-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Task list */}
+                    <div className="p-3 overflow-y-auto max-h-[70vh] space-y-1.5">
+                      {selSchedulers.length === 0 ? (
+                        <div className="py-8 text-center">
+                          <p className="text-xs text-text-muted">Belum ada jadwal untuk lahan ini</p>
+                        </div>
+                      ) : (
+                        selSchedulers.map(task => {
+                          const isToday = task.Tanggal === today;
+                          const isDone = task.Status === 'Done';
+                          const isUpdating = updatingSchedulerId === task.SchedulerId;
+                          const isPast = task.Tanggal < today && !isDone;
+
+                          return (
+                            <div
+                              key={task.SchedulerId}
+                              onClick={(e) => { e.stopPropagation(); handleToggleScheduler(task); }}
+                              className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all group ${
+                                isDone
+                                  ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/30'
+                                  : isToday
+                                  ? 'bg-amber-50 border-amber-300 dark:bg-amber-950/20 dark:border-amber-700/30 shadow-sm'
+                                  : isPast
+                                  ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30'
+                                  : 'bg-bg-50 border-bg-200 hover:border-primary-300 hover:bg-primary-50/30'
+                              }`}
+                            >
+                              {/* Checkbox */}
+                              <div className={`mt-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isUpdating ? 'border-primary-300 bg-primary-100' :
+                                isDone ? 'border-emerald-500 bg-emerald-500' : 'border-bg-300 group-hover:border-primary-400'
+                              }`} style={{width: 18, height: 18}}>
+                                {isUpdating
+                                  ? <RefreshCw size={9} className="animate-spin text-primary-500" />
+                                  : isDone
+                                  ? <CheckCircle2 size={10} className="text-white" />
+                                  : null
+                                }
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-semibold truncate ${
+                                  isDone ? 'line-through text-text-muted' :
+                                  isToday ? 'text-amber-700 dark:text-amber-300' :
+                                  isPast ? 'text-red-600' : 'text-text-dark'
+                                }`}>{task.NamaScheduler}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] text-text-muted">{formatTanggal(task.Tanggal)}</span>
+                                  {isToday && <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">HARI INI</span>}
+                                  {isPast && <span className="text-[9px] font-bold text-red-500 bg-red-100 px-1.5 py-0.5 rounded-full">TERLAMBAT</span>}
+                                </div>
+                              </div>
+
+                              {/* Status badge */}
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                                isDone ? 'bg-emerald-100 text-emerald-700' :
+                                isPast ? 'bg-red-100 text-red-700' :
+                                isToday ? 'bg-amber-100 text-amber-700' :
+                                'bg-bg-200 text-text-muted'
+                              }`}>{task.Status}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
 
@@ -351,7 +650,9 @@ export default function FieldControl() {
                     ? currentLahanId
                       ? "Edit Lahan"
                       : "Tambah Lahan Baru"
-                    : "Tambah Penanaman"}
+                    : currentPenanamanId
+                      ? "Edit Penanaman"
+                      : "Tambah Penanaman"}
                 </h3>
                 <button
                   onClick={closeModal}
@@ -404,6 +705,21 @@ export default function FieldControl() {
                         >
                           <option value="Baik">Baik</option>
                           <option value="Buruk">Buruk</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                          Status Lahan
+                        </label>
+                        <select
+                          name="StatusLahan"
+                          value={formData.StatusLahan}
+                          onChange={handleChange}
+                          className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        >
+                          <option value="Aktif">Aktif</option>
+                          <option value="Kosong">Kosong</option>
+                          <option value="Maintenance">Maintenance</option>
                         </select>
                       </div>
                     </div>
@@ -482,18 +798,20 @@ export default function FieldControl() {
                        required
                      />
                     </div>
-                    <div className="space-y-1.5"> 
-                      <input
-                        type="number"
-                        name="LahanId"
-                        value={penanamanFormData.LahanId}
+                    <input type="hidden" name="LahanId" value={penanamanFormData.LahanId} readOnly />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Status Penanaman</label>
+                      <select
+                        name="Status"
+                        value={penanamanFormData.Status}
                         onChange={handlePenanamanChange}
-                        placeholder="Masukkan LahanId"
-                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100 bg-bg-50"
-                        readOnly
-                        required
-                        
-                      />
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                      >
+                        <option value="Aktif">Aktif</option>
+                        <option value="Panen">Panen</option>
+                        <option value="Gagal">Gagal</option>
+                        <option value="Selesai">Selesai</option>
+                      </select>
                     </div>
                     <div className="pt-4 flex justify-end gap-2 mt-2">
                       <button
