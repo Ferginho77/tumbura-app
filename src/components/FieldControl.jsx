@@ -5,7 +5,7 @@ import { getPenanaman, CreatePenanaman, UpdatePenanaman } from "../api/Penanaman
 import { getSchedulers, UpdateStatus } from "../api/SchedulerService";
 import { GetTanamans } from "../api/TanamanService";
 import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
- 
+
 export default function FieldControl() {
   const [lahan, setLahans] = useState([]);
   const [penanamans, setPenanamans] = useState([]);
@@ -31,7 +31,7 @@ export default function FieldControl() {
     TanggalTanam: "",
     RencanaPanen: "",
     JumlahBibit: "",
-    LahanId: "",  
+    LahanId: "",
     Fase: "Vegetatif",
     Status: "Aktif",
   });
@@ -39,12 +39,10 @@ export default function FieldControl() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dataLahan, dataPenanaman, dataTanaman, dataScheduler] = await Promise.all([
-          getLahan().catch(() => []),
-          getPenanaman().catch(() => []),
-          GetTanamans().catch(() => []),
-          getSchedulers().catch(() => [])
-        ]);
+        const dataLahan = await getLahan().catch(() => []);
+        const dataPenanaman = await getPenanaman().catch(() => []);
+        const dataTanaman = await GetTanamans().catch(() => []);
+        const dataScheduler = await getSchedulers().catch(() => []);
         setLahans(Array.isArray(dataLahan) ? dataLahan : (dataLahan?.data || []));
         setPenanamans(Array.isArray(dataPenanaman) ? dataPenanaman : (dataPenanaman?.data || []));
         const tanamanArr = dataTanaman?.data || dataTanaman;
@@ -88,12 +86,12 @@ export default function FieldControl() {
     setIsModalOpen(true);
     setCurrentLahanId(null);
     setCurrentPenanamanLahanId(lahanId);
-    setPenanamanFormData({ 
-      TanamanId: "", 
-      TanggalTanam: "", 
-      RencanaPanen: "", 
-      JumlahBibit: "", 
-      LahanId: lahanId ? String(lahanId) : "", 
+    setPenanamanFormData({
+      TanamanId: "",
+      TanggalTanam: "",
+      RencanaPanen: "",
+      JumlahBibit: "",
+      LahanId: lahanId !== null && lahanId !== undefined ? String(lahanId) : "",
       Fase: "Vegetatif",
       Status: "Aktif",
     });
@@ -150,11 +148,9 @@ export default function FieldControl() {
   };
 
   const refreshData = async () => {
-    const [dataLahan, dataPenanaman, dataScheduler] = await Promise.all([
-      getLahan().catch(() => []),
-      getPenanaman().catch(() => []),
-      getSchedulers().catch(() => [])
-    ]);
+    const dataLahan = await getLahan().catch(() => []);
+    const dataPenanaman = await getPenanaman().catch(() => []);
+    const dataScheduler = await getSchedulers().catch(() => []);
     const lahanArr = dataLahan?.data || dataLahan;
     const penArr = dataPenanaman?.data || dataPenanaman;
     const schedArr = dataScheduler?.data || dataScheduler;
@@ -210,7 +206,7 @@ export default function FieldControl() {
     setIsModalOpen(true);
   };
 
-  
+
 
   return (
     <div className="p-1 md:p-4 max-w-7xl mx-auto space-y-6">
@@ -279,221 +275,219 @@ export default function FieldControl() {
                 <p className="text-text-muted">Tidak ada lahan yang sesuai dengan pencarian.</p>
               </div>
             ) : (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {filteredLahans.map((item) => {
-    const kondisiClass =
-      item.Kondisi === "Baik"
-        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
-        : "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredLahans.map((item) => {
+                  const kondisiClass =
+                    item.Kondisi === "Baik"
+                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                      : "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
 
-    const associatedPenanaman = penanamans.find(p => p.LahanId === item.LahanId);
-    const isSelected = selectedLahanId === item.LahanId;
+                  const associatedPenanaman = penanamans.find(p => p.LahanId === item.LahanId);
+                  const isSelected = selectedLahanId === item.LahanId;
 
-    return (
-      <div
-        key={item.LahanId}
-        onClick={() => setSelectedLahanId(isSelected ? null : item.LahanId)}
-        className={`card relative overflow-hidden border transition-all duration-200 cursor-pointer ${
-          isSelected
-            ? 'border-primary-500 ring-2 ring-primary-300 bg-primary-50/40'
-            : associatedPenanaman
-            ? 'border-primary-400 bg-primary-50/30 hover:border-primary-500'
-            : 'border-bg-200 bg-card hover:border-primary-300'
-        }`}
-      >
-        {/* Header Line */}
-        <div className={`absolute top-0 left-0 w-full h-1.5 ${associatedPenanaman ? 'bg-primary-500' : 'bg-bg-300'}`} />
-
-        <div className="p-5">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <span
-                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
-              >
-                {item.Kondisi}
-              </span>
-              <span
-                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
-              >
-                {item.StatusLahan}
-              </span>
-
-              <h3 className="text-lg font-bold text-text-dark mt-2">
-                {item.NamaLahan}
-              </h3>
-            </div>
-          </div>
-
-          {/* Informasi */}
-          <div className="space-y-3 mb-4">
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="text-text-muted">
-                  Luas Petak
-                </span>
-
-                <span className="text-primary-600">
-                  {item.LuasTanah} m²
-                </span>
-              </div>
-            </div>
-
-            {associatedPenanaman ? (
-              <>
-                <div className="pt-2 border-t border-bg-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-primary-600">Ditanami {associatedPenanaman.NamaTanaman}</span>
-                  {(() => {
-                    const s = associatedPenanaman.Status;
-                    const cls = s === 'Aktif'
-                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
-                      : s === 'Panen'
-                      ? 'bg-yellow-50 text-yellow-600 dark:bg-yellow-950/20 dark:text-yellow-400'
-                      : s === 'Done'
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400'
-                      : 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400';
-                    return (
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${cls}`}>
-                        {s || 'Aktif'}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-text-muted">Awal Tanam</span>
-                  <span className="text-text-dark">{formatTanggal(associatedPenanaman.TanggalTanam)}</span>
-                </div>
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-text-muted">Fase</span>
-                  <span className="text-text-dark">{associatedPenanaman.Fase || '-'}</span>
-                </div>
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-text-muted">Rencana Panen</span>
-                  <span className="text-text-dark">{formatTanggal(associatedPenanaman.RencanaPanen)}</span>
-                </div>
-
-                {/* ── TASK HARI INI ── */}
-                {(() => {
-                  const today = new Date().toISOString().split('T')[0];
-                  const todayTasks = schedulers.filter(
-                    s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Tanggal === today
-                  );
-                  if (todayTasks.length === 0) return null;
                   return (
-                    <div className="mt-2 pt-2 border-t border-bg-200">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <CalendarCheck size={13} className="text-amber-500" />
-                        <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Task Hari Ini</span>
-                      </div>
-                      <div className="space-y-1">
-                        {todayTasks.map(task => (
-                          <div key={task.SchedulerId} className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 rounded-lg px-2.5 py-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <Clock size={11} className="text-amber-500 shrink-0" />
-                              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">{task.NamaScheduler}</span>
-                            </div>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                              task.Status === 'Done'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : task.Status === 'Dibatalkan'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-amber-100 text-amber-700'
-                            }`}>{task.Status}</span>
+                    <div
+                      key={item.LahanId}
+                      onClick={() => setSelectedLahanId(isSelected ? null : item.LahanId)}
+                      className={`card relative overflow-hidden border transition-all duration-200 cursor-pointer ${isSelected
+                          ? 'border-primary-500 ring-2 ring-primary-300 bg-primary-50/40'
+                          : associatedPenanaman
+                            ? 'border-primary-400 bg-primary-50/30 hover:border-primary-500'
+                            : 'border-bg-200 bg-card hover:border-primary-300'
+                        }`}
+                    >
+                      {/* Header Line */}
+                      <div className={`absolute top-0 left-0 w-full h-1.5 ${associatedPenanaman ? 'bg-primary-500' : 'bg-bg-300'}`} />
+
+                      <div className="p-5">
+                        {/* Header */}
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
+                            >
+                              {item.Kondisi}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
+                            >
+                              {item.StatusLahan}
+                            </span>
+
+                            <h3 className="text-lg font-bold text-text-dark mt-2">
+                              {item.NamaLahan}
+                            </h3>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Informasi */}
+                        <div className="space-y-3 mb-4">
+
+                          <div>
+                            <div className="flex justify-between text-xs font-semibold">
+                              <span className="text-text-muted">
+                                Luas Petak
+                              </span>
+
+                              <span className="text-primary-600">
+                                {item.LuasTanah} m²
+                              </span>
+                            </div>
+                          </div>
+
+                          {associatedPenanaman ? (
+                            <>
+                              <div className="pt-2 border-t border-bg-200 flex items-center justify-between">
+                                <span className="text-xs font-bold text-primary-600">Ditanami {associatedPenanaman.NamaTanaman}</span>
+                                {(() => {
+                                  const s = associatedPenanaman.Status;
+                                  const cls = s === 'Aktif'
+                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                                    : s === 'Panen'
+                                      ? 'bg-yellow-50 text-yellow-600 dark:bg-yellow-950/20 dark:text-yellow-400'
+                                      : s === 'Done'
+                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400'
+                                        : 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400';
+                                  return (
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${cls}`}>
+                                      {s || 'Aktif'}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              <div className="flex justify-between text-xs font-semibold">
+                                <span className="text-text-muted">Awal Tanam</span>
+                                <span className="text-text-dark">{formatTanggal(associatedPenanaman.TanggalTanam)}</span>
+                              </div>
+                              <div className="flex justify-between text-xs font-semibold">
+                                <span className="text-text-muted">Fase</span>
+                                <span className="text-text-dark">{associatedPenanaman.Fase || '-'}</span>
+                              </div>
+                              <div className="flex justify-between text-xs font-semibold">
+                                <span className="text-text-muted">Rencana Panen</span>
+                                <span className="text-text-dark">{formatTanggal(associatedPenanaman.RencanaPanen)}</span>
+                              </div>
+
+                              {/* ── TASK HARI INI ── */}
+                              {(() => {
+                                const today = new Date().toISOString().split('T')[0];
+                                const todayTasks = schedulers.filter(
+                                  s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Tanggal === today
+                                );
+                                if (todayTasks.length === 0) return null;
+                                return (
+                                  <div className="mt-2 pt-2 border-t border-bg-200">
+                                    <div className="flex items-center gap-1.5 mb-1.5">
+                                      <CalendarCheck size={13} className="text-amber-500" />
+                                      <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Task Hari Ini</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                      {todayTasks.map(task => (
+                                        <div key={task.SchedulerId} className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 rounded-lg px-2.5 py-1.5">
+                                          <div className="flex items-center gap-1.5">
+                                            <Clock size={11} className="text-amber-500 shrink-0" />
+                                            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">{task.NamaScheduler}</span>
+                                          </div>
+                                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${task.Status === 'Done'
+                                              ? 'bg-emerald-100 text-emerald-700'
+                                              : task.Status === 'Dibatalkan'
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-amber-100 text-amber-700'
+                                            }`}>{task.Status}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* ── AKTIVITAS TERAKHIR ── */}
+                              {(() => {
+                                const penSchedulers = schedulers
+                                  .filter(s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Status === 'Done')
+                                  .sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+                                const last = penSchedulers[0];
+                                const nextPending = schedulers
+                                  .filter(s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Status === 'Pending')
+                                  .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))[0];
+                                return (
+                                  <div className="mt-2 pt-2 border-t border-bg-200 space-y-1.5">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <CheckCircle2 size={13} className="text-primary-500" />
+                                      <span className="text-[11px] font-bold text-primary-600 uppercase tracking-wide">Aktivitas Terakhir</span>
+                                    </div>
+                                    {last ? (
+                                      <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg px-2.5 py-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div>
+                                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{last.NamaScheduler}</p>
+                                            <p className="text-[10px] text-emerald-600 mt-0.5">{formatTanggal(last.Tanggal)}</p>
+                                          </div>
+                                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Done</span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-[11px] text-text-muted italic">Belum ada aktivitas selesai</p>
+                                    )}
+                                    {nextPending && (
+                                      <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg px-2.5 py-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div>
+                                            <p className="text-[10px] text-blue-500 font-semibold mb-0.5">Berikutnya</p>
+                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">{nextPending.NamaScheduler}</p>
+                                            <p className="text-[10px] text-blue-600 mt-0.5">{formatTanggal(nextPending.Tanggal)}</p>
+                                          </div>
+                                          <AlertCircle size={14} className="text-blue-400 shrink-0 mt-0.5" />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
+                            </>
+                          ) : (
+                            <div className="pt-2 border-t border-bg-200">
+                              <span className="text-xs font-bold text-text-muted italic">Belum ada penanaman</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action */}
+                        <div className="mt-5 flex gap-2">
+
+                          {!associatedPenanaman ? (
+                            <button
+                              type="button"
+                              onClick={() => openPenanamanModal(item.LahanId)}
+                              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
+                            >
+                              <Plus size={14} /> Tambah Penanaman
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openEditPenanamanModal(associatedPenanaman)}
+                              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
+                            >
+                              <Pencil size={14} /> Edit Penanaman
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleEditLahan(item)}
+                            className="px-4 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition"
+                          >
+                            Edit
+                          </button>
+
+                        </div>
                       </div>
                     </div>
                   );
-                })()}
-
-                {/* ── AKTIVITAS TERAKHIR ── */}
-                {(() => {
-                  const penSchedulers = schedulers
-                    .filter(s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Status === 'Done')
-                    .sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
-                  const last = penSchedulers[0];
-                  const nextPending = schedulers
-                    .filter(s => s.PenanamanId === associatedPenanaman.PenanamanId && s.Status === 'Pending')
-                    .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))[0];
-                  return (
-                    <div className="mt-2 pt-2 border-t border-bg-200 space-y-1.5">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <CheckCircle2 size={13} className="text-primary-500" />
-                        <span className="text-[11px] font-bold text-primary-600 uppercase tracking-wide">Aktivitas Terakhir</span>
-                      </div>
-                      {last ? (
-                        <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg px-2.5 py-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{last.NamaScheduler}</p>
-                              <p className="text-[10px] text-emerald-600 mt-0.5">{formatTanggal(last.Tanggal)}</p>
-                            </div>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Done</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-[11px] text-text-muted italic">Belum ada aktivitas selesai</p>
-                      )}
-                      {nextPending && (
-                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg px-2.5 py-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-[10px] text-blue-500 font-semibold mb-0.5">Berikutnya</p>
-                              <p className="text-xs font-bold text-blue-700 dark:text-blue-300">{nextPending.NamaScheduler}</p>
-                              <p className="text-[10px] text-blue-600 mt-0.5">{formatTanggal(nextPending.Tanggal)}</p>
-                            </div>
-                            <AlertCircle size={14} className="text-blue-400 shrink-0 mt-0.5" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-              </>
-            ) : (
-              <div className="pt-2 border-t border-bg-200">
-                   <span className="text-xs font-bold text-text-muted italic">Belum ada penanaman</span>
+                })}
               </div>
-            )}
-          </div>
-
-          {/* Action */}
-          <div className="mt-5 flex gap-2">
-
-            {!associatedPenanaman ? (
-              <button
-                type="button"
-                onClick={() => openPenanamanModal(item.LahanId)}
-                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
-              >
-                <Plus size={14} /> Tambah Penanaman
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openEditPenanamanModal(associatedPenanaman)}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
-              >
-                <Pencil size={14} /> Edit Penanaman
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => handleEditLahan(item)}
-              className="px-4 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition"
-            >
-              Edit
-            </button>
-
-          </div>
-        </div>
-      </div>
-    );
-  })}
-</div>
             )}
           </div>
 
@@ -507,8 +501,8 @@ export default function FieldControl() {
                   : null;
                 const selSchedulers = selPenanaman
                   ? schedulers
-                      .filter(s => s.PenanamanId === selPenanaman.PenanamanId)
-                      .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
+                    .filter(s => s.PenanamanId === selPenanaman.PenanamanId)
+                    .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
                   : [];
 
                 const today = new Date().toISOString().split('T')[0];
@@ -578,36 +572,33 @@ export default function FieldControl() {
                             <div
                               key={task.SchedulerId}
                               onClick={(e) => { e.stopPropagation(); handleToggleScheduler(task); }}
-                              className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all group ${
-                                isDone
+                              className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all group ${isDone
                                   ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/30'
                                   : isToday
-                                  ? 'bg-amber-50 border-amber-300 dark:bg-amber-950/20 dark:border-amber-700/30 shadow-sm'
-                                  : isPast
-                                  ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30'
-                                  : 'bg-bg-50 border-bg-200 hover:border-primary-300 hover:bg-primary-50/30'
-                              }`}
+                                    ? 'bg-amber-50 border-amber-300 dark:bg-amber-950/20 dark:border-amber-700/30 shadow-sm'
+                                    : isPast
+                                      ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30'
+                                      : 'bg-bg-50 border-bg-200 hover:border-primary-300 hover:bg-primary-50/30'
+                                }`}
                             >
                               {/* Checkbox */}
-                              <div className={`mt-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                                isUpdating ? 'border-primary-300 bg-primary-100' :
-                                isDone ? 'border-emerald-500 bg-emerald-500' : 'border-bg-300 group-hover:border-primary-400'
-                              }`} style={{width: 18, height: 18}}>
+                              <div className={`mt-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isUpdating ? 'border-primary-300 bg-primary-100' :
+                                  isDone ? 'border-emerald-500 bg-emerald-500' : 'border-bg-300 group-hover:border-primary-400'
+                                }`} style={{ width: 18, height: 18 }}>
                                 {isUpdating
                                   ? <RefreshCw size={9} className="animate-spin text-primary-500" />
                                   : isDone
-                                  ? <CheckCircle2 size={10} className="text-white" />
-                                  : null
+                                    ? <CheckCircle2 size={10} className="text-white" />
+                                    : null
                                 }
                               </div>
 
                               {/* Content */}
                               <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-semibold truncate ${
-                                  isDone ? 'line-through text-text-muted' :
-                                  isToday ? 'text-amber-700 dark:text-amber-300' :
-                                  isPast ? 'text-red-600' : 'text-text-dark'
-                                }`}>{task.NamaScheduler}</p>
+                                <p className={`text-xs font-semibold truncate ${isDone ? 'line-through text-text-muted' :
+                                    isToday ? 'text-amber-700 dark:text-amber-300' :
+                                      isPast ? 'text-red-600' : 'text-text-dark'
+                                  }`}>{task.NamaScheduler}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-[10px] text-text-muted">{formatTanggal(task.Tanggal)}</span>
                                   {isToday && <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">HARI INI</span>}
@@ -616,12 +607,11 @@ export default function FieldControl() {
                               </div>
 
                               {/* Status badge */}
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
-                                isDone ? 'bg-emerald-100 text-emerald-700' :
-                                isPast ? 'bg-red-100 text-red-700' :
-                                isToday ? 'bg-amber-100 text-amber-700' :
-                                'bg-bg-200 text-text-muted'
-                              }`}>{task.Status}</span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${isDone ? 'bg-emerald-100 text-emerald-700' :
+                                  isPast ? 'bg-red-100 text-red-700' :
+                                    isToday ? 'bg-amber-100 text-amber-700' :
+                                      'bg-bg-200 text-text-muted'
+                                }`}>{task.Status}</span>
                             </div>
                           );
                         })
@@ -745,60 +735,63 @@ export default function FieldControl() {
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Jenis Tanaman
                       </label>
-                        <select 
-                        name="TanamanId" 
+                      <select
+                        name="TanamanId"
                         value={penanamanFormData.TanamanId}
                         onChange={handlePenanamanChange}
                         className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       >
                         <option value="">Pilih Jenis Tanaman</option>
                         {tanaman.map((item, index) => (
-                       <option key={item.TanamanId || index} value={item.TanamanId || item.TanamanId}>
-                {item.NamaTanaman || item.NamaTanaman}
-              </option>
-                      ))}
+                          <option key={item.TanamanId || index} value={item.TanamanId || item.TanamanId}>
+                            {item.NamaTanaman || item.NamaTanaman}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Tanggal Tanam
                       </label>
-                     <input 
-                       type="date" 
-                       name="TanggalTanam"
-                       value={penanamanFormData.TanggalTanam}
-                       onChange={handlePenanamanChange}
-                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" 
-                       required
-                     />
+                      <input
+                        type="date"
+                        name="TanggalTanam"
+                        value={penanamanFormData.TanggalTanam}
+                        onChange={handlePenanamanChange}
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        required
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Rencana Panen
                       </label>
-                     <input 
-                       type="date" 
-                       name="RencanaPanen"
-                       value={penanamanFormData.RencanaPanen}
-                       onChange={handlePenanamanChange}
-                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" 
-                       required
-                     />
+                      <input
+                        type="date"
+                        name="RencanaPanen"
+                        value={penanamanFormData.RencanaPanen}
+                        onChange={handlePenanamanChange}
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        required
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
                         Jumlah Bibit
                       </label>
-                     <input 
-                       type="number" 
-                       name="JumlahBibit"
-                       value={penanamanFormData.JumlahBibit}
-                       onChange={handlePenanamanChange}
-                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100" 
-                       required
-                     />
+                      <input
+                        type="number"
+                        name="JumlahBibit"
+                        value={penanamanFormData.JumlahBibit}
+                        onChange={handlePenanamanChange}
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        required
+                      />
                     </div>
-                    <input type="hidden" name="LahanId" value={penanamanFormData.LahanId} readOnly />
+                    <input
+                      type="text"
+                      className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                      name="LahanId" value={penanamanFormData.LahanId} readOnly />
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Status Penanaman</label>
                       <select
