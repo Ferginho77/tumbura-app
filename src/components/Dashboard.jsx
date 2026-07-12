@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMapPin, faSun, faSeedling, faCloud, faCloudRain, faCloudSunRain, faMoon, faSmog } from "@fortawesome/free-solid-svg-icons";
 import './Dashboard.css';
 import { GetTanamans } from '../api/TanamanService';
-import { getInventaris } from '../api/InventarisService';
 import { getLahan } from '../api/LahanService';
 import { getSchedulers } from '../api/SchedulerService';
 import { getProduksi } from '../api/ProduksiService';
@@ -16,7 +15,6 @@ export default function Dashboard() {
   const [weather, setWeatherData] = useState(false);
   const SearchRef = useRef();
   const [tanamans, setTanamans] = useState([]);
-  const [inventaris, setInventaris] = useState([]);
   const [lahans, setLahans] = useState([]);
   const [schedulers, setSchedulers] = useState([]);
   const [productions, setProductions] = useState([]);
@@ -24,9 +22,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [tanamanRes, invRes, lahanRes, schedRes, prodRes] = await Promise.all([
+        const [tanamanRes, lahanRes, schedRes, prodRes] = await Promise.all([
           GetTanamans().catch(() => []),
-          getInventaris().catch(() => []),
           getLahan().catch(() => []),
           getSchedulers().catch(() => []),
           getProduksi().catch(() => [])
@@ -38,7 +35,6 @@ export default function Dashboard() {
           setCrop(tanamanData[0].nama || tanamanData[0].name || tanamanData[0].NamaTanaman || 'Melon');
         }
 
-        setInventaris(invRes.data || invRes || []);
         setLahans(lahanRes.data || lahanRes || []);
         setSchedulers(schedRes.data || schedRes || []);
         setProductions(Array.isArray(prodRes) ? prodRes : (prodRes?.data || []));
@@ -157,13 +153,6 @@ export default function Dashboard() {
           subtitle={`${lahans.reduce((acc, curr) => acc + (Number(curr.LuasTanah) || 0), 0)} m²`} 
           icon={<Map size={24} className="text-blue-500" />} 
           delay={0.2}
-        />
-        <SummaryCard 
-          title="Item Inventaris" 
-          value={inventaris.length} 
-          subtitle={`${inventaris.reduce((acc, curr) => acc + (Number(curr.Stok) || 0), 0)} Unit`}
-          icon={<Package size={24} className="text-orange-500" />} 
-          delay={0.3}
         />
         <SummaryCard 
           title="Tugas Terjadwal" 
