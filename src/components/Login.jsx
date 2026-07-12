@@ -1,147 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, Mail, Lock, Eye, EyeOff, User, LogIn, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import AuthService from '../api/AuthService';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [isRegister, setIsRegister] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Form Fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Status Notification
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Auto-redirect if already logged in
-  useEffect(() => {
-    const user = localStorage.getItem('greenvibe_user');
-    if (user) {
-      navigate('/', { replace: true });
-    }
-  }, [navigate]);
-
-  // Set default admin account on first load if not exists
-  useEffect(() => {
-    const accounts = localStorage.getItem('greenvibe_accounts');
-    if (!accounts) {
-      const defaultAccounts = [
-        { name: 'Petani Modern', email: 'admin@tumbura.com', password: 'admin123' }
-      ];
-      localStorage.setItem('greenvibe_accounts', JSON.stringify(defaultAccounts));
-    }
-  }, []);
-
-  const handleValidation = () => {
-    if (isRegister && !name.trim()) {
-      setError('Nama lengkap wajib diisi.');
-      return false;
-    }
-    if (!email) {
-      setError('Alamat email wajib diisi.');
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Format email tidak valid.');
-      return false;
-    }
-    if (!password) {
-      setError('Kata sandi wajib diisi.');
-      return false;
-    }
-    if (password.length < 6) {
-      setError('Kata sandi minimal berisi 6 karakter.');
-      return false;
-    }
-    if (isRegister && password !== confirmPassword) {
-      setError('Konfirmasi kata sandi tidak cocok.');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
+    setLoading(true);
 
-    if (!handleValidation()) return;
-
-    setIsLoading(true);
-
-    // Simulate network delay
-    setTimeout(() => {
-      const accounts = JSON.parse(localStorage.getItem('greenvibe_accounts') || '[]');
-
-      if (isRegister) {
-        // Register flow
-        const emailExists = accounts.some(acc => acc.email.toLowerCase() === email.toLowerCase());
-        if (emailExists) {
-          setError('Email sudah terdaftar. Silakan masuk.');
-          setIsLoading(false);
-          return;
-        }
-
-        const newAccount = { name, email, password };
-        accounts.push(newAccount);
-        localStorage.setItem('greenvibe_accounts', JSON.stringify(accounts));
-        
-        setSuccess('Pendaftaran berhasil! Silakan masuk.');
-        setIsRegister(false);
-        // Clean fields
-        setName('');
-        setConfirmPassword('');
-      } else {
-        // Login flow
-        const userAccount = accounts.find(
-          acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
-        );
-
-        if (userAccount) {
-          localStorage.setItem('greenvibe_user', JSON.stringify({
-            name: userAccount.name,
-            email: userAccount.email
-          }));
-          navigate('/', { replace: true });
-        } else {
-          setError('Email atau kata sandi Anda salah.');
-        }
-      }
-      setIsLoading(false);
-    }, 1200);
-  };
-
-  const handleSocialLogin = (platform) => {
-    setError('');
-    setSuccess('');
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const mockUser = {
-        name: `User ${platform}`,
-        email: `user.${platform.toLowerCase()}@tumbura.com`
-      };
-      localStorage.setItem('greenvibe_user', JSON.stringify(mockUser));
-      navigate('/', { replace: true });
-      setIsLoading(false);
-    }, 1000);
+    try {
+      await AuthService.login(username, password);
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Gagal login, periksa kembali kredensial Anda.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-page">
-      {/* Decorative Blur Blobs */}
       <div className="login-bg-blob login-bg-blob-1" />
       <div className="login-bg-blob login-bg-blob-2" />
 
-      {/* Left Column: Visual Banner */}
       <div className="login-banner">
         <div className="banner-logo">
           <img src="/icon.png" alt="TumburaApp Logo" className="w-8 h-8 mr-2" />
@@ -153,8 +44,7 @@ export default function Login() {
             Smart Agriculture,<br />Precision Farming.
           </h1>
           <p className="banner-desc">
-            Optimalkan pertumbuhanbuah dengan
-            sistem monitoring terotomatisasi, serta rekomendasi nutrisi.
+            Optimalkan pertumbuhanbuah dengan sistem monitoring terotomatisasi, serta rekomendasi nutrisi.
           </p>
 
           <div className="mt-8 space-y-4">
@@ -184,28 +74,20 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Column: Form Container */}
       <div className="login-form-container">
-        <motion.div 
+        <motion.div
           className="login-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div className="form-header">
-            <h2 className="form-title">
-              {isRegister ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
-            </h2>
-            {/* <p className="form-subtitle">
-              {isRegister 
-                ? 'Daftar untuk mulai memantau instalasi agrikultur Anda.' 
-                : 'Masuk dengan akun demo admin@tumbura.com (sandi: admin123)'}
-            </p> */}
+            <h2 className="form-title">Selamat Datang Kembali</h2>
           </div>
 
           <AnimatePresence mode="wait">
             {error && (
-              <motion.div 
+              <motion.div
                 className="alert-box alert-error"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -215,56 +97,19 @@ export default function Login() {
                 <span>{error}</span>
               </motion.div>
             )}
-
-            {success && (
-              <motion.div 
-                className="alert-box alert-success"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <CheckCircle size={18} className="shrink-0" />
-                <span>{success}</span>
-              </motion.div>
-            )}
           </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <AnimatePresence initial={false}>
-              {isRegister && (
-                <motion.div 
-                  className="input-group"
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <label className="input-label">Nama Lengkap</label>
-                  <div className="input-wrapper">
-                    <input 
-                      type="text" 
-                      placeholder="Masukkan nama lengkap Anda" 
-                      className="login-input"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={isLoading}
-                    />
-                    <User className="input-icon" size={18} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="input-group">
-              <label className="input-label">Alamat Email</label>
+              <label className="input-label">Nama Pengguna</label>
               <div className="input-wrapper">
-                <input 
-                  type="email" 
-                  placeholder="name@example.com" 
+                <input
+                  type="text"
+                  placeholder="Masukkan username Anda"
                   className="login-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading}
                 />
                 <Mail className="input-icon" size={18} />
               </div>
@@ -275,13 +120,13 @@ export default function Login() {
                 <label className="input-label mb-0">Kata Sandi</label>
               </div>
               <div className="input-wrapper">
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
-                  placeholder="••••••••" 
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
                   className="login-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={loading}
                 />
                 <Lock className="input-icon" size={18} />
                 <button
@@ -295,59 +140,17 @@ export default function Login() {
               </div>
             </div>
 
-            <AnimatePresence initial={false}>
-              {isRegister && (
-                <motion.div 
-                  className="input-group"
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <label className="input-label">Konfirmasi Kata Sandi</label>
-                  <div className="input-wrapper">
-                    <input 
-                      type={showPassword ? 'text' : 'password'} 
-                      placeholder="••••••••" 
-                      className="login-input"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={isLoading}
-                    />
-                    <Lock className="input-icon" size={18} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <button type="submit" className="login-btn" disabled={isLoading}>
-              {isLoading ? (
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{isRegister ? 'Daftar Akun' : 'Masuk ke Dashboard'}</span>
+                  <span>Masuk ke Dashboard</span>
                   <ArrowRight size={18} />
                 </>
               )}
             </button>
           </form>
-
-
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline bg-none border-none cursor-pointer"
-              onClick={() => {
-                setIsRegister(!isRegister);
-                setError('');
-                setSuccess('');
-              }}
-            >
-              {isRegister 
-                ? 'Sudah punya akun? Masuk di sini' 
-                : 'Belum punya akun? Daftar sekarang'}
-            </button>
-          </div>
         </motion.div>
       </div>
     </div>

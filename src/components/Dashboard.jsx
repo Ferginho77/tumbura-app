@@ -1,52 +1,47 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import html2canvas from 'html2canvas';
-import { Line, Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-import { Droplets, ThermometerSun, Sun, AlertTriangle, CheckCircle, Download, Leaf, Map, Package, CalendarClock } from 'lucide-react';
+import { Leaf, Map, Package, CalendarClock, TrendingUp, TrendingDown, PackageCheck } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { evaluateEnvironment } from '../utils/engine';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapPin, faSun, faSeedling, faTree, faTemperature0, faCloud, faCloudRain, faCloudSunRain, faMoon, faSmog } from "@fortawesome/free-solid-svg-icons";
+import { faMapPin, faSun, faSeedling, faCloud, faCloudRain, faCloudSunRain, faMoon, faSmog } from "@fortawesome/free-solid-svg-icons";
 import './Dashboard.css';
 import { GetTanamans } from '../api/TanamanService';
 import { getInventaris } from '../api/InventarisService';
 import { getLahan } from '../api/LahanService';
 import { getSchedulers } from '../api/SchedulerService';
-import { KnowledgeBuah } from '../data/KnowledgeBuah';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
+import { getProduksi } from '../api/ProduksiService';
 
 export default function Dashboard() {
   const [crop, setCrop] = useLocalStorage('greenvibe_selectedCrop', 'Melon');
-  const [phase, setPhase] = useLocalStorage('greenvibe_phase', 'vegetative');
   const [weather, setWeatherData] = useState(false);
   const SearchRef = useRef();
   const [tanamans, setTanamans] = useState([]);
   const [inventaris, setInventaris] = useState([]);
   const [lahans, setLahans] = useState([]);
   const [schedulers, setSchedulers] = useState([]);
+  const [productions, setProductions] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [tanamanRes, invRes, lahanRes, schedRes] = await Promise.all([
+        const [tanamanRes, invRes, lahanRes, schedRes, prodRes] = await Promise.all([
           GetTanamans().catch(() => []),
           getInventaris().catch(() => []),
           getLahan().catch(() => []),
-          getSchedulers().catch(() => [])
+          getSchedulers().catch(() => []),
+          getProduksi().catch(() => [])
         ]);
-        
+
         const tanamanData = tanamanRes.data || tanamanRes || [];
         setTanamans(tanamanData);
         if (tanamanData.length > 0) {
           setCrop(tanamanData[0].nama || tanamanData[0].name || tanamanData[0].NamaTanaman || 'Melon');
         }
-        
+
         setInventaris(invRes.data || invRes || []);
         setLahans(lahanRes.data || lahanRes || []);
         setSchedulers(schedRes.data || schedRes || []);
-
+        setProductions(Array.isArray(prodRes) ? prodRes : (prodRes?.data || []));
       } catch (error) {
         console.error("Gagal mengambil data dashboard:", error);
       }
@@ -54,30 +49,21 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  const [selectedCrop, setSelectedCrop] = useState('');
-  const [knowledge, setKnowledge] = useState(null);
-
-  // Setiap kali tanaman dipilih di dropdown
-  useEffect(() => {
-    if (selectedCrop && KnowledgeBuah[selectedCrop]) {
-      // Ambil detail parameter berdasarkan nama tanaman yang dipilih
-      setKnowledge(KnowledgeBuah[selectedCrop]);
-    } else {
-      setKnowledge(null);
-    }
-  }, [selectedCrop]);
-
-  const [params, setParams] = useState({
-    temperature: 25,
-    humidity: 65,
-    lightIntensity: 35000,
-    pH: 6.0,
-    PPM: 900,
-    EC: 1.5
-  });
-
   const capitalize = (text) =>
     text.charAt(0).toUpperCase() + text.slice(1);
+
+  const sortedProductions = [...productions].sort((a, b) => new Date(b.Tanggal || 0) - new Date(a.Tanggal || 0));
+  const latestProduction = sortedProductions[0];
+  const previousProduction = sortedProductions[1];
+  const totalPanen = productions.reduce((acc, item) => acc + (Number(item.TotalPanen) || 0), 0);
+  const rataPanen = productions.length ? totalPanen / productions.length : 0;
+  const previousValue = Number(previousProduction?.TotalPanen || 0);
+  const latestValue = Number(latestProduction?.TotalPanen || 0);
+  const trendPercent = previousValue > 0 ? ((latestValue - previousValue) / previousValue) * 100 : 0;
+  const isIncreasing = latestProduction && previousProduction ? latestValue > previousValue : false;
+  const trendLabel = latestProduction && previousProduction
+    ? `${isIncreasing ? 'Kenaikan' : 'Penurunan'} ${Math.abs(trendPercent).toFixed(1)}%`
+    : 'Belum ada pembanding';
 
   const ApiIcon = {
     "01d": faSun, "01n": faMoon, "02n": faCloud, "02d": faCloud,
@@ -86,26 +72,7 @@ export default function Dashboard() {
     "50d": faSmog, "50n": faSmog,
   }
 
-  const [evaluation, setEvaluation] = useState({ score: 100, recommendations: [] });
-  const [history, setHistory] = useState({ labels: [], scores: [] });
   const dashboardRef = useRef(null);
-
-  useEffect(() => {
-    const result = evaluateEnvironment(crop, params, phase);
-    setEvaluation(result);
-
-    // Mock history update on change
-    setHistory(prev => {
-      const newLabels = [...prev.labels, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })].slice(-10);
-      const newScores = [...prev.scores, result.score].slice(-10);
-      return { labels: newLabels, scores: newScores };
-    });
-  }, [crop, phase, params]);
-
-  const handleParamChange = (key, value) => {
-    setParams(prev => ({ ...prev, [key]: Number(value) }));
-  };
-
   const search = async (city) => {
     try {
       const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${import.meta.env.VITE_APP_ID}&lang=id`
@@ -152,26 +119,24 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  const formatTanggal = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="dashboard">
       <div className="dashboard-header flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold">Welcome To TumburaApp</h2>
         </div>
-        <div className="controls flex gap-2">
-          <select
-            className="input-field"
-            value={crop}
-            onChange={(e) => setCrop(e.target.value)}
-          >
-            <option>-- Pilih Tanaman --</option>
-            {tanamans.map((item, index) => (
-              <option key={item.TanamanId || index} value={item.NamaTanaman || item.NamaTanaman}>
-                {item.NamaTanaman || item.NamaTanaman}
-              </option>
-            ))}
-          </select>
-        </div>
+       
       </div>
       <div className="flex gap-2">
         <input placeholder="Cari Lokasi..." className="input-field max-w-xs" ref={SearchRef} /> 
@@ -209,146 +174,55 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 p-4 rounded-xl bg-bg-50" ref={dashboardRef}>
-        {/* Left Columns: Sliders */}
-        <div className="card flex flex-col gap-6 md:col-span-2 lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Plants Parameters Controls</h3>
-
-          <div className="control-group">
-            <div className="flex justify-between items-center mb-2">
-              <label className="flex items-center gap-2"><ThermometerSun className="text-warning" /> Temperature (°C)</label>
-              <span className="font-bold">{params.temperature} °C</span>
+      <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_0.8fr] gap-6 mt-6 p-4 rounded-xl bg-bg-50" ref={dashboardRef}>
+        <div className="card p-5 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-primary">Informasi Produksi Panen</h2>
             </div>
-            <input
-              type="range" min="10" max="40" step="1"
-              value={params.temperature}
-              onChange={(e) => handleParamChange('temperature', e.target.value)}
-            />
-          </div>
-
-          <div className="control-group mt-4">
-            <div className="flex justify-between items-center mb-2">
-              <label className="flex items-center gap-2"><Droplets className="text-primary" /> Humidity (%)</label>
-              <span className="font-bold">{params.humidity} %</span>
-            </div>
-            <input
-              type="range" min="30" max="100" step="1"
-              value={params.humidity}
-              onChange={(e) => handleParamChange('humidity', e.target.value)}
-            />
-          </div>
-
-          <div className="control-group mt-4">
-            <div className="flex justify-between items-center mb-2">
-              <label className="flex items-center gap-2"><Sun className="text-warning" /> Light (Lux)</label>
-              <span className="font-bold">{params.lightIntensity} Lux</span>
-            </div>
-            <input
-              type="range" min="0" max="80000" step="1000"
-              value={params.lightIntensity}
-              onChange={(e) => handleParamChange('lightIntensity', e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="control-group">
-              <div className="flex justify-between items-center mb-2">
-                <label>pH Level</label>
-                <span className="font-bold">{params.pH}</span>
-              </div>
-              <input
-                type="range" min="4.0" max="8.0" step="0.1"
-                value={params.pH}
-                onChange={(e) => handleParamChange('pH', e.target.value)}
-              />
-            </div>
-            <div className="control-group">
-              <div className="flex justify-between items-center mb-2">
-                <label>Nutrient (PPM)</label>
-                <span className="font-bold">{params.PPM}</span>
-              </div>
-              <input
-                type="range" min="400" max="2000" step="50"
-                value={params.PPM}
-                onChange={(e) => handleParamChange('PPM', e.target.value)}
-              />
-            </div>
-            <div className="control-group">
-              <div className="flex justify-between items-center mb-2">
-                <label>EC Level</label>
-                <span className="font-bold">{params.EC}</span>
-              </div>
-              <input
-                type="range" max="3.0" min="0.5" step="0.1"
-                value={params.EC}
-                onChange={(e) => handleParamChange('EC', e.target.value)}
-              />
+            <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${isIncreasing ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+              {isIncreasing ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+              {trendLabel}
             </div>
           </div>
-        </div>
 
-        {/* Middle Column: Score and Recommendations */}
-        <div className="flex flex-col gap-6 md:col-span-1 lg:col-span-1">
-          <motion.div
-            className="card text-center flex flex-col items-center justify-center"
-            animate={{ scale: [0.95, 1], opacity: [0.8, 1] }}
-            key={evaluation.score}
-          >
-            <h3 className="text-muted font-semibold mb-2">Health Score</h3>
-            <div className="w-48 h-24 relative flex justify-center mt-2">
-              <Doughnut 
-                data={{
-                  datasets: [
-                    {
-                      data: [evaluation.score, 100 - evaluation.score],
-                      backgroundColor: [
-                        evaluation.score >= 80 ? '#10b981' : evaluation.score >= 60 ? '#f59e0b' : '#ef4444',
-                        '#e2e8f0'
-                      ],
-                      borderWidth: 0,
-                      cutout: '80%',
-                      circumference: 180,
-                      rotation: 270
-                    }
-                  ]
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { tooltip: { enabled: false }, legend: { display: false } },
-                  animation: { duration: 1000, easing: 'easeOutBounce' }
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center flex-col" style={{ top: '30%' }}>
-                <span className={`text-3xl font-bold ${evaluation.score >= 80 ? 'text-primary' : evaluation.score >= 60 ? 'text-warning' : 'text-[red]'}`}>
-                  {evaluation.score}%
-                </span>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-bg-200 bg-bg-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-text-muted">Total panen</p>
+              <p className="mt-2 text-lg font-bold text-text-dark">{totalPanen.toLocaleString('id-ID')} kg</p>
             </div>
-          </motion.div>
+            <div className="rounded-xl border border-bg-200 bg-bg-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-text-muted">Rata-rata panen</p>
+              <p className="mt-2 text-lg font-bold text-text-dark">{rataPanen.toLocaleString('id-ID')} kg</p>
+            </div>
+            <div className="rounded-xl border border-bg-200 bg-bg-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-text-muted">Panen terakhir</p>
+              <p className="mt-2 text-lg font-bold text-text-dark">{latestProduction ? `${Number(latestProduction.TotalPanen || 0).toLocaleString('id-ID')} kg` : 'Belum ada'}</p>
+            </div>
+          </div>
 
-          <div className="card h-full">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              Recommendation
-            </h3>
-            <ul className="recommendation-list">
-              {evaluation.recommendations.map((rec, idx) => (
-                <motion.li
-                  key={idx}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex gap-2 text-sm items-start mb-3 p-2 rounded"
-                >
-                  {evaluation.score === 100 ? <CheckCircle className="text-primary shrink-0" size={18} /> : <AlertTriangle className="text-warning shrink-0" size={18} />}
-                  <span>{rec}</span>
-                </motion.li>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-text-dark">Riwayat panen terbaru</p>
+            <div className="space-y-2">
+              {sortedProductions.slice(0, 3).map((item, index) => (
+                <div key={item.ProduksiId || index} className="flex items-center justify-between rounded-lg border border-bg-200 bg-dark px-3 py-2 text-sm">
+                  <div>
+                    <p className="font-semibold text-text-dark">{Number(item.TotalPanen || 0).toLocaleString('id-ID')} kg</p>
+                    <p className="text-xs text-text-muted">{formatTanggal(item.Tanggal)}</p>
+                  </div>
+                  <span className={`rounded-full px-2 py-1 text-xs font-semibold ${Number(item.TotalPanen || 0) >= (sortedProductions[index + 1]?.TotalPanen || 0) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {Number(item.TotalPanen || 0) >= (sortedProductions[index + 1]?.TotalPanen || 0) ? 'Naik' : 'Turun'}
+                  </span>
+                </div>
               ))}
-            </ul>
+              {sortedProductions.length === 0 && (
+                <p className="rounded-lg border border-dashed border-bg-200 p-3 text-sm text-text-muted">Belum ada data panen untuk ditampilkan.</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Right Column: API Data Cards */}
-        <div className="flex flex-col gap-4 md:col-span-1 lg:col-span-1">
+        <div className="flex flex-col gap-4">
           <Card
             title="Cuaca"
             value={

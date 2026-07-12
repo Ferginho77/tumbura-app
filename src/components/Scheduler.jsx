@@ -10,7 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { getSchedulers, UpdateStatus, DeleteScheduler, CreateScheduler, UpdateScheduler } from "../api/SchedulerService";
-
+import {GetAktivitas} from "../api/AktivitasService";
 
 export default function Scheduler() {
   const [schedulers, setSchedulers] = useState([]);
@@ -30,7 +30,7 @@ const [editId, setEditId] = useState(null);
   const fetchSchedulers = async () => {
   try {
     setLoading(true);
-    const data = await getSchedulers();
+    const data = await GetAktivitas();
     console.log("Schedulers:", data);
     setSchedulers(data);
   } catch (error) {
@@ -148,10 +148,10 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
       <div className="mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Calendar />
-          Maintenance Scheduler
+         Log Aktivitas
         </h2>
         <p className="text-muted">
-          Local task manager for daily greenhouse operations
+         Memantau Log Aktivitas Pertanian Anda
         </p>
       </div>
 
@@ -204,7 +204,7 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
               <AnimatePresence>
                 {schedulers.map((scheduler) => (
                   <motion.tr
-                    key={scheduler.SchedulerId}
+                    key={scheduler.AktivitasId}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -213,7 +213,7 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
                   > 
                     {/* Task */}
                     <td className="py-4 font-medium">
-                      {scheduler.NamaScheduler}
+                      {scheduler.JenisAktivitas}
                     </td>
 
                     {/* Date */}
@@ -223,24 +223,7 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
 
                     {/* Status */}
                     <td className="py-4">
-                      <button
-                        className="flex items-center gap-2"
-                       onClick={() =>
-                                      handleUpdateStatus(
-                                        scheduler.SchedulerId,
-                                        scheduler.Status
-                                      )
-                                    }
-                      >
-                        {scheduler.Status === "Done" ? (
-                          <CheckCircle size={20} className="text-green-500" />
-                        ) : (
-                          <Circle size={20} className="text-gray-400" />
-                        )}
-                        <span className="text-sm">
-                         
-                        </span>
-                      </button>
+                         {scheduler.Keterangan}
                     </td>
 
                     {/* Actions */}
@@ -275,7 +258,7 @@ const handleUpdateStatus = async (SchedulerId, Status) => {
 
           {/* Empty state */}
             <div className="text-center py-10 text-gray-400">
-              Tidak ada tugas terjadwal. Tambahkan tugas baru untuk memulai!
+              Tidak ada Log Aktivitas. Tambahkan tugas baru untuk memulai!
             </div>
         </div>
       </div>

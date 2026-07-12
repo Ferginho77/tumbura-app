@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLahan, CreateLahan, UpdateLahan } from "../api/LahanService";
-import { getPenanaman, CreatePenanaman, UpdatePenanaman } from "../api/PenanamanService";
+import { getPenanaman, CreatePenanaman, UpdatePenanaman, DeletePenanaman } from "../api/PenanamanService";
 import { getSchedulers, UpdateStatus } from "../api/SchedulerService";
 import { GetTanamans } from "../api/TanamanService";
 import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
@@ -16,7 +16,6 @@ export default function FieldControl() {
   const [currentLahanId, setCurrentLahanId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState("lahan");
-  const [currentPenanamanLahanId, setCurrentPenanamanLahanId] = useState(null);
   const [currentPenanamanId, setCurrentPenanamanId] = useState(null);
   const [selectedLahanId, setSelectedLahanId] = useState(null);
   const [updatingSchedulerId, setUpdatingSchedulerId] = useState(null);
@@ -85,7 +84,6 @@ export default function FieldControl() {
     setModalType("penanaman");
     setIsModalOpen(true);
     setCurrentLahanId(null);
-    setCurrentPenanamanLahanId(lahanId);
     setPenanamanFormData({
       TanamanId: "",
       TanggalTanam: "",
@@ -100,7 +98,6 @@ export default function FieldControl() {
   const openEditPenanamanModal = (penanaman) => {
     setModalType("penanaman");
     setCurrentPenanamanId(penanaman.PenanamanId);
-    setCurrentPenanamanLahanId(penanaman.LahanId);
     setCurrentLahanId(null);
     setPenanamanFormData({
       TanamanId: String(penanaman.TanamanId),
@@ -117,7 +114,6 @@ export default function FieldControl() {
   const closeModal = () => {
     setIsModalOpen(false);
     setCurrentLahanId(null);
-    setCurrentPenanamanLahanId(null);
     setCurrentPenanamanId(null);
     setModalType("lahan");
   };
@@ -171,6 +167,25 @@ export default function FieldControl() {
       closeModal();
     } catch (error) {
       console.error("Error saving penanaman:", error);
+    }
+  };
+
+  const handleClearLahan = async (penanaman) => {
+    if (!penanaman?.PenanamanId) return;
+
+    const confirmed = window.confirm("Kosongkan lahan ini? Status penanaman akan diubah menjadi Selesai.");
+    if (!confirmed) return;
+
+    try {
+      await UpdatePenanaman(penanaman.PenanamanId, {
+        ...penanaman,
+        Status: "Selesai"
+      });
+      setSelectedLahanId(null);
+      await refreshData();
+    } catch (error) {
+      console.error("Gagal kosongkan lahan:", error);
+      alert("Gagal kosongkan lahan. Silakan coba lagi.");
     }
   };
 
@@ -282,7 +297,11 @@ export default function FieldControl() {
                       ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
                       : "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
 
-                  const associatedPenanaman = penanamans.find(p => p.LahanId === item.LahanId);
+                  // Only show penanamans with status Aktif or Panen
+                  const associatedPenanaman = penanamans.find(p => 
+                    p.LahanId === item.LahanId && 
+                    ['Aktif', 'Panen'].includes(String(p.Status || '').trim())
+                  );
                   const isSelected = selectedLahanId === item.LahanId;
 
                   return (
@@ -368,6 +387,46 @@ export default function FieldControl() {
                                 <span className="text-text-dark">{formatTanggal(associatedPenanaman.RencanaPanen)}</span>
                               </div>
 
+                              {/* ── PROGRESS LEVEL ── */}
+                              {(() => {
+                                const tanam = new Date(associatedPenanaman.TanggalTanam);
+                                const panen = new Date(associatedPenanaman.RencanaPanen);
+                                const now = new Date();
+                                
+                                let prog = 0;
+                                let dayPassed = 0;
+                                let total = 0;
+                                
+                                if (!isNaN(tanam) && !isNaN(panen) && tanam < panen) {
+                                  total = Math.ceil((panen - tanam) / (1000 * 60 * 60 * 24));
+                                  dayPassed = Math.ceil((now - tanam) / (1000 * 60 * 60 * 24));
+                                  if (dayPassed >= total) prog = 100;
+                                  else if (dayPassed > 0) prog = Math.round((dayPassed / total) * 100);
+                                  
+                                  dayPassed = Math.max(0, dayPassed);
+                                }
+                                
+                                return (
+                                  <div className="mt-3 pt-3 border-t border-bg-200">
+                                    <div className="flex justify-between text-[11px] font-semibold mb-1.5">
+                                      <span className="text-text-muted">Progres Pertumbuhan</span>
+                                      <span className="text-primary-600">Hari ke-{Math.min(dayPassed, total)} / {total} ({prog}%)</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-bg-200 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-emerald-500 rounded-full transition-all duration-1000 relative overflow-hidden"
+                                        style={{ width: `${prog}%` }}
+                                      >
+                                        <div className="absolute inset-0 w-full h-full" style={{
+                                          backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                                          animation: 'shimmer 2s infinite linear'
+                                        }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
                               {/* ── TASK HARI INI ── */}
                               {(() => {
                                 const today = new Date().toISOString().split('T')[0];
@@ -448,7 +507,7 @@ export default function FieldControl() {
                             </>
                           ) : (
                             <div className="pt-2 border-t border-bg-200">
-                              <span className="text-xs font-bold text-text-muted italic">Belum ada penanaman</span>
+                              <span className="text-xs font-bold text-text-muted italic">Kosong</span>
                             </div>
                           )}
                         </div>
@@ -459,7 +518,7 @@ export default function FieldControl() {
                           {!associatedPenanaman ? (
                             <button
                               type="button"
-                              onClick={() => openPenanamanModal(item.LahanId)}
+                              onClick={(e) => { e.stopPropagation(); openPenanamanModal(item.LahanId); }}
                               className="flex-1 bg-primary-500 hover:bg-primary-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
                             >
                               <Plus size={14} /> Tambah Penanaman
@@ -467,16 +526,26 @@ export default function FieldControl() {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => openEditPenanamanModal(associatedPenanaman)}
+                              onClick={(e) => { e.stopPropagation(); openEditPenanamanModal(associatedPenanaman); }}
                               className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
                             >
                               <Pencil size={14} /> Edit Penanaman
                             </button>
                           )}
 
+                          {associatedPenanaman && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleClearLahan(associatedPenanaman); }}
+                              className="px-4 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap"
+                            >
+                              Kosongkan Lahan
+                            </button>
+                          )}
+
                           <button
                             type="button"
-                            onClick={() => handleEditLahan(item)}
+                            onClick={(e) => { e.stopPropagation(); handleEditLahan(item); }}
                             className="px-4 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition"
                           >
                             Edit
@@ -789,7 +858,7 @@ export default function FieldControl() {
                       />
                     </div>
                     <input
-                      type="text"
+                      type="hidden"
                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       name="LahanId" value={penanamanFormData.LahanId} readOnly />
                     <div className="space-y-1.5">

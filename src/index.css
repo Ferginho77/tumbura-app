@@ -67,6 +67,11 @@
   }
 }
 
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+  0% { transform: translateX(-100%); }
+}
+
 @layer components {
   /* Transition Bridge: Custom elements styled with CSS Variables or @apply */
   

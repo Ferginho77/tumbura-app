@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, Activity, Bug, Calendar, Menu, X, Sun, Moon, Package, LogOut } from 'lucide-react';
+import { Sprout, Activity, Wheat, Calendar, Menu, X, Sun, Moon, Package, LogOut  } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import './Layout.css';
 
 const navItems = [
   { path: '/', name: 'Dashboard', icon: Activity },
-  { path: '/scheduler', name: 'Task Scheduler', icon: Calendar },
-  { path: '/inventory', name: 'Inventory', icon: Package },
-  { path: '/fields', name: 'Field Control', icon: Sprout }
+  { path: '/scheduler', name: 'Activity Log', icon: Calendar },
+  { path: '/fields', name: 'Field Control', icon: Sprout },
+  { path: '/harvest', name: 'Harvest', icon: Wheat },
 ];
 
 export default function Layout() {
