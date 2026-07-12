@@ -1,5 +1,5 @@
-const API_Inventaris = 'http://localhost:8080/inventaris';
-// const API_Inventaris = 'https://be-project-nu.vercel.app/inventaris';
+// const API_Inventaris = 'http://localhost:8080/inventaris';
+ const API_Inventaris = 'https://be-project-nu.vercel.app/inventaris';
 
 
 export const getInventaris = async () => {

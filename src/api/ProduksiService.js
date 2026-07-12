@@ -1,4 +1,5 @@
-const API_PRODUKSI = 'http://localhost:8080/produksi';
+// const API_PRODUKSI = 'http://localhost:8080/produksi';
+const API_PRODUKSI = 'https://be-project-nu.vercel.app/produksi';
 
 export const getProduksi = async () => {
     try {
