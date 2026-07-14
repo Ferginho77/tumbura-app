@@ -1,8 +1,8 @@
-// const API_LAHAN = 'http://localhost:8080/lahans';
-const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
+const API_LAHAN = 'http://localhost:8080/lahans';
+// const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
 
 export const getLahan = async () => {
-     const respose = await fetch(API_LAHAN);
+    const response = await fetch(API_LAHAN);
     const data = await respose.json();
     return data;
 }
@@ -10,7 +10,9 @@ export const getLahan = async () => {
 export const CreateLahan = async (lahan) => {
     const payload = {
         ...lahan,
-        LuasTanah: parseInt(lahan.LuasTanah, 10)
+        // LuasTanah: parseInt(lahan.LuasTanah, 10)
+        // diubah jadi parseFloat soalnya biar mendukung dengan yang ada di golangnya, karena yang di definisikan di golangnya pake float64
+        LuasTanah: parseFloat(lahan.LuasTanah, 10)
     };
 
     console.log("DATA KE BACKEND:", payload);
@@ -32,7 +34,9 @@ export const CreateLahan = async (lahan) => {
 export const UpdateLahan = async (LahanId, LahanData) => {
   const payload = {
     ...LahanData,
-    LuasTanah: parseInt(LahanData.LuasTanah, 10),
+    // LuasTanah: parseInt(LahanData.LuasTanah, 10),
+    // Sama kaya yang di atas
+    LuasTanah: parseFloat(LahanData.LuasTanah, 10),
   };
   console.log("DATA KE BACKEND:", payload);
 

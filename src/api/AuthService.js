@@ -1,7 +1,7 @@
 // src/api/AuthService.js
 
-// const API_URL = 'http://localhost:8080/login';
-const API_URL = 'https://be-project-nu.vercel.app/login';
+const API_URL = 'http://localhost:8080/login';
+// const API_URL = 'https://be-project-nu.vercel.app/login';
 
 const login = async (username, password) => {
   const response = await fetch(`${API_URL}`, {
