@@ -1,5 +1,5 @@
-const API_LAHAN = 'http://localhost:8080/lahans';
-// const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
+// const API_LAHAN = 'http://localhost:8080/lahans';
+const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
 
 export const getLahan = async () => {
     const response = await fetch(API_LAHAN);
