@@ -74,16 +74,8 @@ export default function Harvest() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Kriteria Siap Panen: Status == 'Panen' ATAU (Status Aktif dan Tanggal Rencana Panen sudah lewat/hari ini)
-  const isSiapPanen = (p) => {
-    if (p.Status === "Panen") return true;
-    if (p.Status === "Aktif") {
-      const rp = new Date(p.RencanaPanen);
-      rp.setHours(0, 0, 0, 0);
-      return rp <= today;
-    }
-    return false;
-  };
+  // Kriteria Siap Panen: hanya Status == 'Panen'
+  const isSiapPanen = (p) => p.Status === "Panen";
 
   // Kriteria Sudah Panen: Status == 'Selesai'
   const isSudahPanen = (p) => p.Status === "Selesai";

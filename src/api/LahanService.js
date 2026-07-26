@@ -1,9 +1,9 @@
-// const API_LAHAN = 'http://localhost:8080/lahans';
-const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
+ const API_LAHAN = 'http://localhost:8080/lahans';
+// const API_LAHAN = 'https://be-project-nu.vercel.app/lahans';
 
 export const getLahan = async () => {
     const response = await fetch(API_LAHAN);
-    const data = await respose.json();
+    const data = await response.json();
     return data;
 }
 
@@ -53,5 +53,14 @@ export const UpdateLahan = async (LahanId, LahanData) => {
     throw new Error(errorText || "Gagal memperbarui data lahan");
   }
 
+  return res.json();
+};
+
+export const getLahanControl = async (LahanId) => {
+  const res = await fetch(`${API_LAHAN}/${LahanId}/control`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || "Gagal mengambil data control lahan");
+  }
   return res.json();
 };

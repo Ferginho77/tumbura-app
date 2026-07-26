@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getLahan, CreateLahan, UpdateLahan } from "../api/LahanService";
+import { getLahan, CreateLahan, UpdateLahan, getLahanControl } from "../api/LahanService";
 import { getPenanaman, CreatePenanaman, UpdatePenanaman, DeletePenanaman } from "../api/PenanamanService";
 import { getSchedulers, UpdateStatus } from "../api/SchedulerService";
-import { GetTanamans } from "../api/TanamanService";
-import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { GetTanamans, CreateTanaman } from "../api/TanamanService";
+import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle, Sprout } from "lucide-react";
 
 export default function FieldControl() {
   const [lahan, setLahans] = useState([]);
@@ -19,6 +19,12 @@ export default function FieldControl() {
   const [currentPenanamanId, setCurrentPenanamanId] = useState(null);
   const [selectedLahanId, setSelectedLahanId] = useState(null);
   const [updatingSchedulerId, setUpdatingSchedulerId] = useState(null);
+  const [selectedControl, setSelectedControl] = useState({
+    penanaman: null,
+    scheduler: [],
+    aktivitas: []
+  });
+  const [loadingControl, setLoadingControl] = useState(false);
   const [formData, setFormData] = useState({
     NamaLahan: "",
     LuasTanah: "",
@@ -33,6 +39,12 @@ export default function FieldControl() {
     LahanId: "",
     Fase: "Vegetatif",
     Status: "Aktif",
+  });
+
+  const [TanamanFormData, setTanamanFormData] = useState({
+    NamaTanaman: "",
+    Deskripsi: "",
+    UmurPanen: "",
   });
 
   useEffect(() => {
@@ -57,6 +69,25 @@ export default function FieldControl() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const fetchControlData = async () => {
+      if (!selectedLahanId) {
+        setSelectedControl({ penanaman: null, scheduler: [], aktivitas: [] });
+        return;
+      }
+      setLoadingControl(true);
+      try {
+        const data = await getLahanControl(selectedLahanId);
+        setSelectedControl(data || { penanaman: null, scheduler: [], aktivitas: [] });
+      } catch (err) {
+        console.error("Gagal mengambil control data lahan:", err);
+      } finally {
+        setLoadingControl(false);
+      }
+    };
+    fetchControlData();
+  }, [selectedLahanId]);
+
   const totalLahan = lahan.length;
   const filteredLahans = lahan.filter((item) => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -78,6 +109,14 @@ export default function FieldControl() {
     setCurrentLahanId(null);
     setFormData({ NamaLahan: "", LuasTanah: "", Kondisi: "Baik", StatusLahan: "Aktif" });
     setIsModalOpen(true);
+  };
+
+  const openTanamanForm = () => {
+    setModalType("tanaman");
+    setIsModalOpen(true);
+    setCurrentPenanamanId(null);
+    setCurrentLahanId(null);
+    setTanamanFormData({ NamaTanaman: "", Deskripsi: "", UmurPanen: "" });
   };
 
   const openPenanamanModal = (lahanId) => {
@@ -128,11 +167,22 @@ export default function FieldControl() {
     setPenanamanFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleTanamanChange = (e) => {
+    const { name, value } = e.target;
+    setTanamanFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleToggleScheduler = async (scheduler) => {
     const newStatus = scheduler.Status === 'Done' ? 'Pending' : 'Done';
     setUpdatingSchedulerId(scheduler.SchedulerId);
     try {
       await UpdateStatus(scheduler.SchedulerId, newStatus);
+      setSelectedControl(prev => ({
+        ...prev,
+        scheduler: prev.scheduler.map(s =>
+          s.SchedulerId === scheduler.SchedulerId ? { ...s, Status: newStatus } : s
+        )
+      }));
       setSchedulers(prev => prev.map(s =>
         s.SchedulerId === scheduler.SchedulerId ? { ...s, Status: newStatus } : s
       ));
@@ -147,12 +197,24 @@ export default function FieldControl() {
     const dataLahan = await getLahan().catch(() => []);
     const dataPenanaman = await getPenanaman().catch(() => []);
     const dataScheduler = await getSchedulers().catch(() => []);
+    const dataTanaman = await GetTanamans().catch(() => []);
     const lahanArr = dataLahan?.data || dataLahan;
     const penArr = dataPenanaman?.data || dataPenanaman;
     const schedArr = dataScheduler?.data || dataScheduler;
+    const tanamanArr = dataTanaman?.data || dataTanaman;
     setLahans(Array.isArray(lahanArr) ? lahanArr : []);
     setPenanamans(Array.isArray(penArr) ? penArr : []);
     setSchedulers(Array.isArray(schedArr) ? schedArr : []);
+    setTanaman(Array.isArray(tanamanArr) ? tanamanArr : []);
+
+    if (selectedLahanId) {
+      try {
+        const data = await getLahanControl(selectedLahanId);
+        setSelectedControl(data || { penanaman: null, scheduler: [], aktivitas: [] });
+      } catch (err) {
+        console.error("Gagal refresh control data lahan:", err);
+      }
+    }
   };
 
   const handleSubmitPenanaman = async (e) => {
@@ -167,6 +229,20 @@ export default function FieldControl() {
       closeModal();
     } catch (error) {
       console.error("Error saving penanaman:", error);
+    }
+  };
+
+  const handleSubmitTanaman = async (e) => {
+    e.preventDefault();
+    try {
+      await CreateTanaman({
+        ...TanamanFormData,
+        UmurPanen: parseInt(TanamanFormData.UmurPanen, 10) || 0,
+      });
+      await refreshData();
+      closeModal();
+    } catch (error) {
+      console.error("Error saving tanaman:", error);
     }
   };
 
@@ -274,6 +350,13 @@ export default function FieldControl() {
             <Plus size={14} />
             Lahan Baru
           </button>
+          <button
+          onClick={openTanamanForm}
+          className="btn-secondary flex items-center gap-2 shrink-0"
+        >
+          <Sprout size={14} />
+          Tanaman Baru
+        </button>
         </div>
       </div>
 
@@ -565,13 +648,15 @@ export default function FieldControl() {
             <div className="card border border-bg-200 bg-card rounded-xl sticky top-4">
               {(() => {
                 const selLahan = lahan.find(l => l.LahanId === selectedLahanId);
-                const selPenanaman = selLahan
-                  ? penanamans.find(p => p.LahanId === selLahan.LahanId)
+                const selPenanamanRaw = selectedControl.penanaman;
+                const selPenanaman = selPenanamanRaw
+                  ? {
+                      ...selPenanamanRaw,
+                      NamaTanaman: tanaman.find(t => t.TanamanId === selPenanamanRaw.TanamanId)?.NamaTanaman || 'Tanaman Tidak Ditemukan'
+                    }
                   : null;
-                const selSchedulers = selPenanaman
-                  ? schedulers
-                    .filter(s => s.PenanamanId === selPenanaman.PenanamanId)
-                    .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
+                const selSchedulers = selectedControl.scheduler
+                  ? [...selectedControl.scheduler].sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
                   : [];
 
                 const today = new Date().toISOString().split('T')[0];
@@ -586,6 +671,13 @@ export default function FieldControl() {
                     </div>
                     <p className="text-sm font-semibold text-text-dark">Pilih Lahan</p>
                     <p className="text-xs text-text-muted">Klik salah satu card lahan untuk melihat checklist jadwal aktivitas</p>
+                  </div>
+                );
+
+                if (loadingControl) return (
+                  <div className="p-6 flex flex-col items-center justify-center gap-3 text-center min-h-[300px]">
+                    <RefreshCw className="animate-spin text-primary-500" size={24} />
+                    <p className="text-sm font-semibold text-text-dark">Memuat data control lahan...</p>
                   </div>
                 );
 
@@ -798,6 +890,65 @@ export default function FieldControl() {
                       </button>
                     </div>
                   </form>
+                ) : modalType === "tanaman" ? (
+                  <form className="space-y-4" onSubmit={handleSubmitTanaman}>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                        Nama Tanaman
+                      </label>
+                      <input
+                        type="text"
+                        name="NamaTanaman"
+                        value={TanamanFormData.NamaTanaman}
+                        onChange={handleTanamanChange}
+                        placeholder="Masukkan nama tanaman"
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                        Deskripsi
+                      </label>
+                      <textarea
+                        name="Deskripsi"
+                        value={TanamanFormData.Deskripsi}
+                        onChange={handleTanamanChange}
+                        placeholder="Deskripsikan tanaman singkat"
+                        className="w-full min-h-[110px] p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                        Umur Panen (hari)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        name="UmurPanen"
+                        value={TanamanFormData.UmurPanen}
+                        onChange={handleTanamanChange}
+                        placeholder="Masukkan umur panen"
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        required
+                      />
+                    </div>
+                    <div className="pt-4 flex justify-end gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-dark transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-primary-500 text-white text-sm font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+                      >
+                        Simpan Tanaman
+                      </button>
+                    </div>
+                  </form>
                 ) : (
                   <form className="space-y-4" onSubmit={handleSubmitPenanaman}>
                     <div className="space-y-1.5">
@@ -891,7 +1042,8 @@ export default function FieldControl() {
                       </button>
                     </div>
                   </form>
-                )}
+                )
+                }
               </div>
             </motion.div>
           </div>
