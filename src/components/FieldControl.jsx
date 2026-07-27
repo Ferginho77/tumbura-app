@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getLahan, CreateLahan, UpdateLahan, getLahanControl } from "../api/LahanService";
 import { getPenanaman, CreatePenanaman, UpdatePenanaman, DeletePenanaman } from "../api/PenanamanService";
 import { getSchedulers, UpdateStatus } from "../api/SchedulerService";
-import { GetTanamans, CreateTanaman } from "../api/TanamanService";
+import { GetTanamans } from "../api/TanamanService";
 import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle, Sprout } from "lucide-react";
 
 export default function FieldControl() {
@@ -39,12 +39,6 @@ export default function FieldControl() {
     LahanId: "",
     Fase: "Vegetatif",
     Status: "Aktif",
-  });
-
-  const [TanamanFormData, setTanamanFormData] = useState({
-    NamaTanaman: "",
-    Deskripsi: "",
-    UmurPanen: "",
   });
 
   useEffect(() => {
@@ -111,14 +105,6 @@ export default function FieldControl() {
     setIsModalOpen(true);
   };
 
-  const openTanamanForm = () => {
-    setModalType("tanaman");
-    setIsModalOpen(true);
-    setCurrentPenanamanId(null);
-    setCurrentLahanId(null);
-    setTanamanFormData({ NamaTanaman: "", Deskripsi: "", UmurPanen: "" });
-  };
-
   const openPenanamanModal = (lahanId) => {
     setModalType("penanaman");
     setIsModalOpen(true);
@@ -165,11 +151,6 @@ export default function FieldControl() {
   const handlePenanamanChange = (e) => {
     const { name, value } = e.target;
     setPenanamanFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleTanamanChange = (e) => {
-    const { name, value } = e.target;
-    setTanamanFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleToggleScheduler = async (scheduler) => {
@@ -232,36 +213,19 @@ export default function FieldControl() {
     }
   };
 
-  const handleSubmitTanaman = async (e) => {
-    e.preventDefault();
-    try {
-      await CreateTanaman({
-        ...TanamanFormData,
-        UmurPanen: parseInt(TanamanFormData.UmurPanen, 10) || 0,
-      });
-      await refreshData();
-      closeModal();
-    } catch (error) {
-      console.error("Error saving tanaman:", error);
-    }
-  };
-
-  const handleClearLahan = async (penanaman) => {
+  const handleDeletePenanaman = async (penanaman) => {
     if (!penanaman?.PenanamanId) return;
 
-    const confirmed = window.confirm("Kosongkan lahan ini? Status penanaman akan diubah menjadi Selesai.");
+    const confirmed = window.confirm("Apakah Anda yakin ingin menghapus penanaman ini secara permanen?");
     if (!confirmed) return;
 
     try {
-      await UpdatePenanaman(penanaman.PenanamanId, {
-        ...penanaman,
-        Status: "Selesai"
-      });
+      await DeletePenanaman(penanaman.PenanamanId);
       setSelectedLahanId(null);
       await refreshData();
     } catch (error) {
-      console.error("Gagal kosongkan lahan:", error);
-      alert("Gagal kosongkan lahan. Silakan coba lagi.");
+      console.error("Gagal menghapus penanaman:", error);
+      alert("Gagal menghapus penanaman. Silakan coba lagi.");
     }
   };
 
@@ -350,13 +314,6 @@ export default function FieldControl() {
             <Plus size={14} />
             Lahan Baru
           </button>
-          <button
-          onClick={openTanamanForm}
-          className="btn-secondary flex items-center gap-2 shrink-0"
-        >
-          <Sprout size={14} />
-          Tanaman Baru
-        </button>
         </div>
       </div>
 
@@ -619,10 +576,10 @@ export default function FieldControl() {
                           {associatedPenanaman && (
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleClearLahan(associatedPenanaman); }}
+                              onClick={(e) => { e.stopPropagation(); handleDeletePenanaman(associatedPenanaman); }}
                               className="px-4 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap"
                             >
-                              Kosongkan Lahan
+                              Hapus Penanaman
                             </button>
                           )}
 
@@ -887,65 +844,6 @@ export default function FieldControl() {
                         className="px-4 py-2 bg-primary-500 text-white text-sm font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
                       >
                         Simpan Lahan
-                      </button>
-                    </div>
-                  </form>
-                ) : modalType === "tanaman" ? (
-                  <form className="space-y-4" onSubmit={handleSubmitTanaman}>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
-                        Nama Tanaman
-                      </label>
-                      <input
-                        type="text"
-                        name="NamaTanaman"
-                        value={TanamanFormData.NamaTanaman}
-                        onChange={handleTanamanChange}
-                        placeholder="Masukkan nama tanaman"
-                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
-                        Deskripsi
-                      </label>
-                      <textarea
-                        name="Deskripsi"
-                        value={TanamanFormData.Deskripsi}
-                        onChange={handleTanamanChange}
-                        placeholder="Deskripsikan tanaman singkat"
-                        className="w-full min-h-[110px] p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
-                        Umur Panen (hari)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        name="UmurPanen"
-                        value={TanamanFormData.UmurPanen}
-                        onChange={handleTanamanChange}
-                        placeholder="Masukkan umur panen"
-                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                        required
-                      />
-                    </div>
-                    <div className="pt-4 flex justify-end gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-dark transition-colors"
-                      >
-                        Batal
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-primary-500 text-white text-sm font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
-                      >
-                        Simpan Tanaman
                       </button>
                     </div>
                   </form>

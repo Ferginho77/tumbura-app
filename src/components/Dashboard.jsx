@@ -5,7 +5,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMapPin, faSun, faSeedling, faCloud, faCloudRain, faCloudSunRain, faMoon, faSmog, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 import './Dashboard.css';
-import { GetTanamans, CreateTanaman, DeleteTanaman } from '../api/TanamanService';
+import { GetTanamans, CreateTanaman, DeleteTanaman, EditTanaman } from '../api/TanamanService';
 import { getLahan } from '../api/LahanService';
 import { getSchedulers } from '../api/SchedulerService';
 import { getProduksi } from '../api/ProduksiService';
@@ -157,6 +157,17 @@ const [tanamanFormData, setTanamanFormData] = useState({
     setIsModalOpen(true);
   };
 
+  const openEditTanamanForm = (tanaman) => {
+    setModalType("tanaman");
+    setCurrentTanamanId(tanaman.TanamanId);
+    setTanamanFormData({
+      NamaTanaman: tanaman.NamaTanaman || "",
+      Deskripsi: tanaman.Deskripsi || "",
+      UmurPanen: String(tanaman.UmurPanen),
+    });
+    setIsModalOpen(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setCurrentTanamanId(null);
@@ -179,7 +190,11 @@ const [tanamanFormData, setTanamanFormData] = useState({
     }
 
     try {
-      await CreateTanaman(payload);
+      if (currentTanamanId) {
+        await EditTanaman(currentTanamanId, payload);
+      } else {
+        await CreateTanaman(payload);
+      }
       await loadDashboardData();
       closeModal();
     } catch (error) {
@@ -214,18 +229,6 @@ const [tanamanFormData, setTanamanFormData] = useState({
         </div>
 
       </div>
-      <div className="flex gap-2">
-        <input placeholder="Cari Lokasi..." className="input-field max-w-xs" ref={SearchRef} />
-        <button onClick={() => search(SearchRef.current.value)} className="btn-primary text-white rounded-lg shadow hover:bg-green-600 transition text-sm sm:text-base px-4">Cari</button>
-         <button
-                  onClick={openTanamanForm}
-                  className="btn-secondary flex items-center gap-2 shrink-0"
-                >
-                  <Sprout size={14} />
-                  Tanaman Baru
-                </button>
-      </div>
-
       {/* Dashboard Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         <SummaryCard
@@ -362,7 +365,10 @@ const [tanamanFormData, setTanamanFormData] = useState({
                   {item.UmurPanen || "-"} hari
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <button className="text-blue-500 hover:text-blue-700">
+                  <button
+                    className="text-blue-500 hover:text-blue-700"
+                    onClick={() => openEditTanamanForm(item)}
+                  >
                     <FontAwesomeIcon icon={faEdit} />
                   </button>
                   <button className="text-red-500 hover:text-red-700 ml-2"
@@ -452,6 +458,15 @@ const [tanamanFormData, setTanamanFormData] = useState({
 </div>
 
         <div className="flex flex-col gap-4">
+           <div className="flex gap-2">
+              <input placeholder="Cari Lokasi..." className="input-field max-w-xs" ref={SearchRef} />
+              <button onClick={() => search(SearchRef.current.value)} className="btn-primary text-white rounded-lg shadow hover:bg-green-600 transition text-sm sm:text-base px-4">Cari</button>
+              <button
+                onClick={openTanamanForm}
+                className="btn-primary text-white rounded-lg shadow hover:bg-green-600 transition text-sm sm:text-base px-4">
+                Tanaman Baru
+              </button>
+            </div>
           <Card
             title="Cuaca"
             value={
@@ -554,7 +569,7 @@ const [tanamanFormData, setTanamanFormData] = useState({
                       type="submit"
                       className="px-4 py-2 bg-primary-500 text-white text-sm font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
                     >
-                      Simpan Tanaman
+                      {currentTanamanId ? "Simpan Perubahan" : "Simpan Tanaman"}
                     </button>
                   </div>
                 </form>
