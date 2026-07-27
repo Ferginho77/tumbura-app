@@ -1,8 +1,8 @@
-const API_ACTIVITY = 'http://localhost:8080/aktivitas';
-// const API_ACTIVITY = 'https://be-project-nu.vercel.app/aktivitas';
+// const API_ACTIVITY = 'http://localhost:8080/aktivitas';
+const API_ACTIVITY = 'https://be-project-nu.vercel.app/aktivitas';
 // nambah tanaman buat di activity log
-const API_TANAMAN = 'http://localhost:8080/tanaman'; 
-// const API_TANAMAN = 'https://be-project-nu.vercel.app/tanaman';
+// const API_TANAMAN = 'http://localhost:8080/tanaman'; 
+const API_TANAMAN = 'https://be-project-nu.vercel.app/tanaman';
 
 export const GetAktivitas = async () => {
     const response = await fetch(API_ACTIVITY);
@@ -30,4 +30,4 @@ export const GetTanaman = async () => {
     const response = await fetch(API_TANAMAN);
     const data = await response.json();
     return data;
-}
+}
