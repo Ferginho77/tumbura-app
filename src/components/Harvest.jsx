@@ -49,7 +49,7 @@ export default function Harvest() {
       setSelectedPenanaman(null);
     } catch (error) {
       console.error("Gagal memproses panen:", error);
-      alert("Gagal memproses panen, silakan coba lagi.");
+      alert("Gagal memproses panen: " + (error.message || "silakan coba lagi."));
     }
   };
 
@@ -107,8 +107,8 @@ export default function Harvest() {
     const p = penanamans.find(pen => Number(pen.PenanamanId) === Number(prod.PenanamanId));
     return {
       ...prod,
-      NamaTanaman: p?.NamaTanaman || "Tanaman Tidak Ditemukan",
-      NamaLahan: p?.NamaLahan || "Lahan Tidak Ditemukan"
+      NamaTanaman: p?.NamaTanaman || "Tanaman Telah Di Hapus",
+      NamaLahan: p?.NamaLahan || "Lahan Telah Di Hapus"
     };
   }).filter(item => {
     const kw = historySearchQuery.toLowerCase();

@@ -5,9 +5,11 @@ import {
 } from "lucide-react";
 import { getSchedulers, UpdateStatus, DeleteScheduler, CreateScheduler, UpdateScheduler } from "../api/SchedulerService";
 import { GetAktivitas } from "../api/AktivitasService";
+import { getPenanaman } from "../api/PenanamanService";
 
 export default function Scheduler() {
   const [schedulers, setSchedulers] = useState([]);
+  const [penanamans, setPenanamans] = useState([]);
   const [aktivitasList, setAktivitasList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,18 +30,30 @@ export default function Scheduler() {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const schedulerData = await getSchedulers();
-      const listSchedulers = Array.isArray(schedulerData) ? schedulerData : [];
-      setSchedulers(listSchedulers);
+      const [schedulerData, penanamanData, aktivitasData] = await Promise.all([
+        getSchedulers().catch(() => []),
+        getPenanaman().catch(() => []),
+        GetAktivitas().catch(() => [])
+      ]);
 
-      const aktivitasData = await GetAktivitas();
+      const listPenanaman = Array.isArray(penanamanData) ? penanamanData : [];
+      setPenanamans(listPenanaman);
+
+      const listSchedulers = Array.isArray(schedulerData) ? schedulerData : [];
+      
+      // Filter: Hanya scheduler dari penanaman yang statusnya 'Aktif' atau 'Panen'
+      const filteredSchedulers = listSchedulers.filter((s) => {
+        const p = listPenanaman.find((item) => Number(item.PenanamanId) === Number(s.PenanamanId));
+        return p ? (p.Status === "Aktif" || p.Status === "Panen") : false;
+      });
+      setSchedulers(filteredSchedulers);
       setAktivitasList(Array.isArray(aktivitasData) ? aktivitasData : []);
 
-      if (listSchedulers.length > 0) {
-        const firstValidId = listSchedulers[0].PenanamanId;
+      const activeOrHarvest = listPenanaman.filter((p) => p.Status === "Aktif" || p.Status === "Panen");
+      if (activeOrHarvest.length > 0) {
         setFormData((prev) => ({
           ...prev,
-          PenanamanId: Number(firstValidId)
+          PenanamanId: Number(activeOrHarvest[0].PenanamanId)
         }));
       }
     } catch (error) {
@@ -221,11 +235,14 @@ export default function Scheduler() {
               value={formData.PenanamanId}
               onChange={(e) => setFormData({ ...formData, PenanamanId: Number(e.target.value) })}
             >
-              {[...Object.keys(groupedSchedulers)].sort((a, b) => Number(a) - Number(b)).map((id) => (
-                <option key={id} value={Number(id)} className="bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-100">
-                  Penanaman #{id}
-                </option>
-              ))}
+              {penanamans
+                .filter((p) => p.Status === "Aktif" || p.Status === "Panen")
+                .sort((a, b) => Number(a.PenanamanId) - Number(b.PenanamanId))
+                .map((p) => (
+                  <option key={p.PenanamanId} value={p.PenanamanId} className="bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-100">
+                    Penanaman #{p.PenanamanId} ({p.NamaTanaman || "Tanaman"}) - {p.NamaLahan || "Lahan"}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -318,12 +335,14 @@ export default function Scheduler() {
                     return new Date(a.Tanggal) - new Date(b.Tanggal);
                   });
 
+                  const pInfo = penanamans.find(p => Number(p.PenanamanId) === Number(penanamanId));
+
                   return (
                     <div key={penanamanId} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/60 flex flex-col justify-between h-[255px] transition-colors duration-200">
                       <div>
                         <div className="border-b border-gray-100 dark:border-slate-700/80 pb-1.5 mb-2 flex justify-between items-center bg-gray-50 dark:bg-slate-700/40 p-2 rounded-lg transition-colors">
-                          <span className="font-bold text-xs text-green-700 dark:text-green-400 flex items-center gap-1">
-                            🌱 Penanaman ID: #{penanamanId}
+                          <span className="font-bold text-xs text-green-700 dark:text-green-400 flex items-center gap-1 max-w-[70%] truncate" title={pInfo ? `${pInfo.NamaTanaman} (${pInfo.NamaLahan})` : `Penanaman #${penanamanId}`}>
+                            🌱 {pInfo ? `${pInfo.NamaTanaman} (${pInfo.NamaLahan})` : `Penanaman #${penanamanId}`}
                           </span>
                           <span className="text-[10px] bg-green-100 dark:bg-green-950/50 text-green-800 dark:text-green-300 px-2 py-0.5 rounded-full font-semibold transition-colors">
                             {sortedAgenda.length} Agenda

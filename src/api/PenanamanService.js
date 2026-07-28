@@ -78,11 +78,15 @@ export const CreatePenanaman = async (penanaman) => {
 }
 
 export const UpdatePenanaman = async (PenanamanId, penanaman) => {
+    const toDateStr = (val) => (val ? String(val).split('T')[0] : '');
+
     const payload = {
         ...penanaman,
-        JumlahBibit: parseInt(penanaman.JumlahBibit, 10),
-        TanamanId: parseInt(penanaman.TanamanId, 10),
-        LahanId: parseInt(penanaman.LahanId, 10),
+        JumlahBibit:  parseInt(penanaman.JumlahBibit, 10),
+        TanamanId:    parseInt(penanaman.TanamanId, 10),
+        LahanId:      parseInt(penanaman.LahanId, 10),
+        TanggalTanam: toDateStr(penanaman.TanggalTanam),
+        RencanaPanen: toDateStr(penanaman.RencanaPanen),
     };
 
     const response = await fetch(`${API_PENANAMAN}/${PenanamanId}/update`, {

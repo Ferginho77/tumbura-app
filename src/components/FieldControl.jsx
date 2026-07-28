@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getLahan, CreateLahan, UpdateLahan, getLahanControl } from "../api/LahanService";
+import { getLahan, CreateLahan, UpdateLahan, DeleteLahan, getLahanControl } from "../api/LahanService";
 import { getPenanaman, CreatePenanaman, UpdatePenanaman, DeletePenanaman } from "../api/PenanamanService";
 import { getSchedulers, UpdateStatus } from "../api/SchedulerService";
 import { GetTanamans } from "../api/TanamanService";
-import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle, Sprout } from "lucide-react";
+import { Layers, Search, Compass, Plus, RefreshCw, Pencil, CalendarCheck, Clock, CheckCircle2, AlertCircle, Trash } from "lucide-react";
 
 export default function FieldControl() {
   const [lahan, setLahans] = useState([]);
@@ -29,7 +29,7 @@ export default function FieldControl() {
     NamaLahan: "",
     LuasTanah: "",
     Kondisi: "Baik",
-    StatusLahan: "Aktif"
+    StatusLahan: "Kosong"
   });
   const [penanamanFormData, setPenanamanFormData] = useState({
     TanamanId: "",
@@ -101,7 +101,7 @@ export default function FieldControl() {
 
   const openModal = () => {
     setCurrentLahanId(null);
-    setFormData({ NamaLahan: "", LuasTanah: "", Kondisi: "Baik", StatusLahan: "Aktif" });
+    setFormData({ NamaLahan: "", LuasTanah: "", Kondisi: "Baik", StatusLahan: "Kosong" });
     setIsModalOpen(true);
   };
 
@@ -151,27 +151,6 @@ export default function FieldControl() {
   const handlePenanamanChange = (e) => {
     const { name, value } = e.target;
     setPenanamanFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleToggleScheduler = async (scheduler) => {
-    const newStatus = scheduler.Status === 'Done' ? 'Pending' : 'Done';
-    setUpdatingSchedulerId(scheduler.SchedulerId);
-    try {
-      await UpdateStatus(scheduler.SchedulerId, newStatus);
-      setSelectedControl(prev => ({
-        ...prev,
-        scheduler: prev.scheduler.map(s =>
-          s.SchedulerId === scheduler.SchedulerId ? { ...s, Status: newStatus } : s
-        )
-      }));
-      setSchedulers(prev => prev.map(s =>
-        s.SchedulerId === scheduler.SchedulerId ? { ...s, Status: newStatus } : s
-      ));
-    } catch (err) {
-      console.error('Gagal update status scheduler:', err);
-    } finally {
-      setUpdatingSchedulerId(null);
-    }
   };
 
   const refreshData = async () => {
@@ -229,6 +208,18 @@ export default function FieldControl() {
     }
   };
 
+   const handleDeleteLahan = async (lahanId) => {
+  if (!window.confirm("Yakin ingin menghapus lahan ini?")) return;
+
+  try {
+    await DeleteLahan(lahanId);
+
+    refreshData();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
   const handleSubmitLahan = async (e) => {
     e.preventDefault();
 
@@ -259,6 +250,27 @@ export default function FieldControl() {
       StatusLahan: item.StatusLahan
     });
     setIsModalOpen(true);
+  };
+
+  const handleMarkSiapPanen = async (e, penanaman) => {
+    e.stopPropagation();
+    if (!window.confirm(`Tandai penanaman "${penanaman.NamaTanaman}" sebagai Siap Panen?`)) return;
+    try {
+      // Kirim hanya field yang dikenali backend, date harus dalam format YYYY-MM-DD
+      await UpdatePenanaman(penanaman.PenanamanId, {
+        TanamanId:    Number(penanaman.TanamanId),
+        LahanId:      Number(penanaman.LahanId),
+        JumlahBibit:  Number(penanaman.JumlahBibit),
+        TanggalTanam: penanaman.TanggalTanam ? penanaman.TanggalTanam.split('T')[0] : '',
+        RencanaPanen: penanaman.RencanaPanen ? penanaman.RencanaPanen.split('T')[0] : '',
+        Fase:        'Generatif',
+        Status:       'Panen',
+      });
+      await refreshData();
+    } catch (error) {
+      console.error("Gagal mengubah status ke Panen:", error);
+      alert("Gagal mengubah status penanaman: " + (error.message || "Silakan coba lagi."));
+    }
   };
 
 
@@ -362,6 +374,20 @@ export default function FieldControl() {
                         {/* Header */}
                         <div className="flex justify-between items-start mb-4">
                           <div>
+                               <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleEditLahan(item); }}
+                              className="px-4 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition"
+                            >
+                              Edit Lahan
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteLahan(item.LahanId); }}
+                              className="ml-2 px-4 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap"
+                            >
+                              Hapus Lahan
+                            </button>
                             <span
                               className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${kondisiClass}`}
                             >
@@ -442,19 +468,27 @@ export default function FieldControl() {
                                   dayPassed = Math.ceil((now - tanam) / (1000 * 60 * 60 * 24));
                                   if (dayPassed >= total) prog = 100;
                                   else if (dayPassed > 0) prog = Math.round((dayPassed / total) * 100);
-                                  
                                   dayPassed = Math.max(0, dayPassed);
                                 }
+
+                                const isReadyToHarvest = prog >= 100 && associatedPenanaman.Status === 'Aktif';
+                                const barColor = isReadyToHarvest
+                                  ? 'bg-amber-400'
+                                  : prog >= 75
+                                    ? 'bg-yellow-400'
+                                    : 'bg-emerald-500';
                                 
                                 return (
                                   <div className="mt-3 pt-3 border-t border-bg-200">
                                     <div className="flex justify-between text-[11px] font-semibold mb-1.5">
                                       <span className="text-text-muted">Progres Pertumbuhan</span>
-                                      <span className="text-primary-600">Hari ke-{Math.min(dayPassed, total)} / {total} ({prog}%)</span>
+                                      <span className={isReadyToHarvest ? 'text-amber-600 font-bold animate-pulse' : 'text-primary-600'}>
+                                        {isReadyToHarvest ? '🌾 Siap Panen!' : `Hari ke-${Math.min(dayPassed, total)} / ${total} (${prog}%)`}
+                                      </span>
                                     </div>
-                                    <div className="w-full h-1.5 bg-bg-200 rounded-full overflow-hidden">
+                                    <div className="w-full h-2 bg-bg-200 rounded-full overflow-hidden">
                                       <div
-                                        className="h-full bg-emerald-500 rounded-full transition-all duration-1000 relative overflow-hidden"
+                                        className={`h-full ${barColor} rounded-full transition-all duration-1000 relative overflow-hidden`}
                                         style={{ width: `${prog}%` }}
                                       >
                                         <div className="absolute inset-0 w-full h-full" style={{
@@ -553,7 +587,7 @@ export default function FieldControl() {
                         </div>
 
                         {/* Action */}
-                        <div className="mt-5 flex gap-2">
+                        <div className="mt-5 flex gap-2 flex-wrap">
 
                           {!associatedPenanaman ? (
                             <button
@@ -563,15 +597,38 @@ export default function FieldControl() {
                             >
                               <Plus size={14} /> Tambah Penanaman
                             </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); openEditPenanamanModal(associatedPenanaman); }}
-                              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
-                            >
-                              <Pencil size={14} /> Edit Penanaman
-                            </button>
-                          )}
+                          ) : (() => {
+                            const tanam = new Date(associatedPenanaman.TanggalTanam);
+                            const panen = new Date(associatedPenanaman.RencanaPanen);
+                            const now = new Date();
+                            let prog = 0;
+                            if (!isNaN(tanam) && !isNaN(panen) && tanam < panen) {
+                              const total = Math.ceil((panen - tanam) / (1000 * 60 * 60 * 24));
+                              const dayPassed = Math.ceil((now - tanam) / (1000 * 60 * 60 * 24));
+                              prog = dayPassed >= total ? 100 : dayPassed > 0 ? Math.round((dayPassed / total) * 100) : 0;
+                            }
+                            const isReadyToHarvest = prog >= 100 && associatedPenanaman.Status === 'Aktif';
+                            return (
+                              <>
+                                {isReadyToHarvest && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleMarkSiapPanen(e, associatedPenanaman)}
+                                    className="flex-1 bg-amber-400 hover:bg-amber-500 text-white rounded-lg py-2.5 text-sm font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-400/30 animate-pulse"
+                                  >
+                                    🌾 Siap Panen
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); openEditPenanamanModal(associatedPenanaman); }}
+                                  className="px-4 border border-amber-500 text-amber-600 hover:bg-amber-50 rounded-lg py-2.5 text-sm font-semibold transition flex items-center justify-center gap-1.5"
+                                >
+                                  <Pencil size={20} />
+                                </button>
+                              </>
+                            );
+                          })()}
 
                           {associatedPenanaman && (
                             <button
@@ -579,17 +636,9 @@ export default function FieldControl() {
                               onClick={(e) => { e.stopPropagation(); handleDeletePenanaman(associatedPenanaman); }}
                               className="px-4 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap"
                             >
-                              Hapus Penanaman
+                              <Trash size={20} />
                             </button>
                           )}
-
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleEditLahan(item); }}
-                            className="px-4 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition"
-                          >
-                            Edit
-                          </button>
 
                         </div>
                       </div>
@@ -598,147 +647,6 @@ export default function FieldControl() {
                 })}
               </div>
             )}
-          </div>
-
-          {/* ── RIGHT COLUMN: Scheduler Checklist ── */}
-          <div className="lg:col-span-1">
-            <div className="card border border-bg-200 bg-card rounded-xl sticky top-4">
-              {(() => {
-                const selLahan = lahan.find(l => l.LahanId === selectedLahanId);
-                const selPenanamanRaw = selectedControl.penanaman;
-                const selPenanaman = selPenanamanRaw
-                  ? {
-                      ...selPenanamanRaw,
-                      NamaTanaman: tanaman.find(t => t.TanamanId === selPenanamanRaw.TanamanId)?.NamaTanaman || 'Tanaman Tidak Ditemukan'
-                    }
-                  : null;
-                const selSchedulers = selectedControl.scheduler
-                  ? [...selectedControl.scheduler].sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
-                  : [];
-
-                const today = new Date().toISOString().split('T')[0];
-                const done = selSchedulers.filter(s => s.Status === 'Done').length;
-                const total = selSchedulers.length;
-                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-
-                if (!selLahan) return (
-                  <div className="p-6 flex flex-col items-center justify-center gap-3 text-center min-h-[300px]">
-                    <div className="w-14 h-14 rounded-full bg-bg-100 flex items-center justify-center">
-                      <CalendarCheck size={24} className="text-text-muted" />
-                    </div>
-                    <p className="text-sm font-semibold text-text-dark">Pilih Lahan</p>
-                    <p className="text-xs text-text-muted">Klik salah satu card lahan untuk melihat checklist jadwal aktivitas</p>
-                  </div>
-                );
-
-                if (loadingControl) return (
-                  <div className="p-6 flex flex-col items-center justify-center gap-3 text-center min-h-[300px]">
-                    <RefreshCw className="animate-spin text-primary-500" size={24} />
-                    <p className="text-sm font-semibold text-text-dark">Memuat data control lahan...</p>
-                  </div>
-                );
-
-                return (
-                  <>
-                    {/* Panel Header */}
-                    <div className="p-4 border-b border-bg-200 bg-bg-50 rounded-t-xl">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-sm font-bold text-text-dark">{selLahan.NamaLahan}</h3>
-                          {selPenanaman
-                            ? <p className="text-xs text-text-muted mt-0.5">Tanaman: {selPenanaman.NamaTanaman}</p>
-                            : <p className="text-xs text-amber-500 mt-0.5 italic">Belum ada penanaman</p>
-                          }
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedLahanId(null); }}
-                          className="text-text-muted hover:text-text-dark text-lg leading-none transition-colors"
-                        >✕</button>
-                      </div>
-
-                      {/* Progress bar */}
-                      {total > 0 && (
-                        <div className="mt-3">
-                          <div className="flex justify-between text-[11px] font-semibold mb-1">
-                            <span className="text-text-muted">{done}/{total} task selesai</span>
-                            <span className="text-primary-600">{pct}%</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-bg-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary-500 rounded-full transition-all duration-500"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Task list */}
-                    <div className="p-3 overflow-y-auto max-h-[70vh] space-y-1.5">
-                      {selSchedulers.length === 0 ? (
-                        <div className="py-8 text-center">
-                          <p className="text-xs text-text-muted">Belum ada jadwal untuk lahan ini</p>
-                        </div>
-                      ) : (
-                        selSchedulers.map(task => {
-                          const isToday = task.Tanggal === today;
-                          const isDone = task.Status === 'Done';
-                          const isUpdating = updatingSchedulerId === task.SchedulerId;
-                          const isPast = task.Tanggal < today && !isDone;
-
-                          return (
-                            <div
-                              key={task.SchedulerId}
-                              onClick={(e) => { e.stopPropagation(); handleToggleScheduler(task); }}
-                              className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all group ${isDone
-                                  ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/30'
-                                  : isToday
-                                    ? 'bg-amber-50 border-amber-300 dark:bg-amber-950/20 dark:border-amber-700/30 shadow-sm'
-                                    : isPast
-                                      ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/30'
-                                      : 'bg-bg-50 border-bg-200 hover:border-primary-300 hover:bg-primary-50/30'
-                                }`}
-                            >
-                              {/* Checkbox */}
-                              <div className={`mt-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isUpdating ? 'border-primary-300 bg-primary-100' :
-                                  isDone ? 'border-emerald-500 bg-emerald-500' : 'border-bg-300 group-hover:border-primary-400'
-                                }`} style={{ width: 18, height: 18 }}>
-                                {isUpdating
-                                  ? <RefreshCw size={9} className="animate-spin text-primary-500" />
-                                  : isDone
-                                    ? <CheckCircle2 size={10} className="text-white" />
-                                    : null
-                                }
-                              </div>
-
-                              {/* Content */}
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-semibold truncate ${isDone ? 'line-through text-text-muted' :
-                                    isToday ? 'text-amber-700 dark:text-amber-300' :
-                                      isPast ? 'text-red-600' : 'text-text-dark'
-                                  }`}>{task.NamaScheduler}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] text-text-muted">{formatTanggal(task.Tanggal)}</span>
-                                  {isToday && <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">HARI INI</span>}
-                                  {isPast && <span className="text-[9px] font-bold text-red-500 bg-red-100 px-1.5 py-0.5 rounded-full">TERLAMBAT</span>}
-                                </div>
-                              </div>
-
-                              {/* Status badge */}
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${isDone ? 'bg-emerald-100 text-emerald-700' :
-                                  isPast ? 'bg-red-100 text-red-700' :
-                                    isToday ? 'bg-amber-100 text-amber-700' :
-                                      'bg-bg-200 text-text-muted'
-                                }`}>{task.Status}</span>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
           </div>
         </div>
       )}
@@ -821,12 +729,13 @@ export default function FieldControl() {
                         </label>
                         <select
                           name="StatusLahan"
-                          value={formData.StatusLahan}
+                          value={formData.StatusLahan || "Kosong"}
                           onChange={handleChange}
                           className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                        
                         >
+                           <option value="Kosong">Kosong</option>
                           <option value="Aktif">Aktif</option>
-                          <option value="Kosong">Kosong</option>
                           <option value="Maintenance">Maintenance</option>
                         </select>
                       </div>
@@ -910,6 +819,18 @@ export default function FieldControl() {
                       type="hidden"
                       className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       name="LahanId" value={penanamanFormData.LahanId} readOnly />
+                       <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Fase Penanaman</label>
+                      <select
+                        name="Fase"
+                        value={penanamanFormData.Fase}
+                        onChange={handlePenanamanChange}
+                        className="w-full p-2.5 bg-input text-text-dark border border-bg-200 rounded-lg outline-none text-sm transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                      >
+                        <option value="Vegetatif">Vegetatif</option>
+                        <option value="Generatif">Generatif</option>
+                      </select>
+                    </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Status Penanaman</label>
                       <select

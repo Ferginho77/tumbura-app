@@ -64,3 +64,14 @@ export const getLahanControl = async (LahanId) => {
   }
   return res.json();
 };
+
+export const DeleteLahan = async (LahanId) => {
+  const res = await fetch(`${API_LAHAN}/${LahanId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || "Gagal menghapus data lahan");
+  }
+  return res.json();
+};
