@@ -1,10 +1,10 @@
 // src/api/AuthService.js
 
-//  const API_URL = 'http://localhost:8080/login';
-const API_URL = 'https://be-project-nu.vercel.app/login';
+const BASE_URL = 'https://be-project-nu.vercel.app';
+//  const BASE_URL = 'http://localhost:8080';
 
 const login = async (username, password) => {
-  const response = await fetch(`${API_URL}`, {
+  const response = await fetch(`${BASE_URL}/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -22,6 +22,31 @@ const login = async (username, password) => {
   // Jika berhasil, simpan token ke localStorage langsung dari service ini
   if (data.token) {
     localStorage.setItem('token', data.token);
+    if (data.username) localStorage.setItem('username', data.username);
+  }
+
+  return data;
+};
+
+const register = async (username, password) => {
+  const response = await fetch(`${BASE_URL}/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'Registrasi gagal, coba lagi.');
+  }
+
+  // Auto-login: simpan token setelah berhasil register
+  if (data.token) {
+    localStorage.setItem('token', data.token);
+    if (data.username) localStorage.setItem('username', data.username);
   }
 
   return data;
@@ -29,6 +54,7 @@ const login = async (username, password) => {
 
 const logout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('username');
 };
 
 const getToken = () => {
@@ -38,6 +64,7 @@ const getToken = () => {
 // Ekspor semua fungsi sebagai satu objek
 const AuthService = {
   login,
+  register,
   logout,
   getToken,
 };
